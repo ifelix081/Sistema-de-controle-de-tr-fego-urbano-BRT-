@@ -2,41 +2,54 @@
 #include <stdlib.h>
 #include <locale.h>
 
-int main (void){
-//variaveis
-    int linha,numero_onibus;
+struct BRT {
+    int linha;
+    int numero_onibus;
     char placa[10];
     char garagem[50];
     char motorista[50];
     char turno[10];
-    char horario_saida[6];
-    char horario_chegada[6];
-    char status[20];
-    char observacoes[100];
-//recebendo dados cadastro
+};
 
 void cadastro(){
-    FILE *relatoriobrt = fopen("relatoriobrt", "a");
+    FILE *relatoriobrt = fopen("relatoriobrt.txt", "a");
     struct BRT b;
+
     if (relatoriobrt == NULL){
         printf("Erro na criação do arquivo!\n");
         return;
     }
-    printf("---Cadastro BRT---");
+
+    printf("---Cadastro BRT---\n");
+
     printf("Linha: ");
     scanf("%d", &b.linha);
+
     printf("Número do onibus: ");
     scanf("%d", &b.numero_onibus);
 
+    printf("Placa: ");
+    scanf("%s", b.placa);
 
+    printf("Qual garagem: ");
+    scanf("%s", b.garagem);
 
+    printf("Nome do Motorista: ");
+    scanf("%s", b.motorista);
 
+    printf("Turno: ");
+    scanf("%s", b.turno);
+
+    fprintf(relatoriobrt, "%d %d %s %s %s %s\n",
+            b.linha, b.numero_onibus, b.placa,
+            b.garagem, b.motorista, b.turno);
+
+    fclose(relatoriobrt);
+
+    printf("Cadastro realizado com sucesso!\n");
 }
 
-
-
-
-
-
+int main(void){
+    cadastro();
     return 0;
 }
