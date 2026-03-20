@@ -1,10 +1,14 @@
-# Sistema BRT
+# Sistema de Controle de Trafego Urbano (BRT)
 
-> **Status:** Em desenvolvimento 🚧
+> **Status:** Em desenvolvimento
 
-Sistema de cadastro e gerenciamento de onibus BRT (Bus Rapid Transit). O codigo principal do projeto foi feito na linguagem **C**. Permite registrar onibus, paradas, motoristas e linhas, salvando tudo em arquivos de texto.
+Sistema de cadastro e gerenciamento de onibus BRT (Bus Rapid Transit). Permite registrar onibus, paradas, motoristas e linhas, salvando tudo em arquivos de texto.
 
 **Autor:** Italo
+
+## Codigo Principal
+
+O codigo principal do projeto foi desenvolvido na linguagem **C**.
 
 ## O que o programa faz
 
@@ -46,6 +50,8 @@ main.c
 
 ## Tecnologias
 
-- Linguagem C
+- Linguagem C (padrão C99)
 - Arquivos de texto para persistencia de dados
 - Bibliotecas: `stdio.h`, `stdlib.h`, `string.h`
+
+====================================================================================================================================
