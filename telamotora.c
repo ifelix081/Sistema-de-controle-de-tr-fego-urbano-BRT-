@@ -157,7 +157,7 @@ void salvar_jornada()
     fprint(f, LINHA_DIV);
     fprintf(f, "  resumo das ocorrencias\n");
     fprintf(f, LINHA_DIV);
-        aviso *a = &motorista.total_avisos; i++)
+        aviso *a = (motorista.total_avisos; i++)
         {
             fprint(f, " [%d] %s | %-35s | %s\n", i+1, a->protocolo, a->tipo, a->gravidade);
         }
@@ -170,7 +170,7 @@ void salvar_jornada()
    fclose(f);
    printf("\n%s Relatorio de jornada: %s%s%s\n", nome_arq);
 }
-
+// tela de login
 void tela_login()
 {
  cabecalho();
@@ -195,7 +195,102 @@ char mat[32], nome[64], linha[64], veic[64];
     strncpy(motorista.linha,     linha, sizeof(motorista.linha)     - 1);
     strncpy(motorista.veiculo,   veic,  sizeof(motorista.veiculo)   - 1);
 
+    printf("\n%s Jornada Iniciada às %s%s\n", motorista.hora_inicio);
+    pausar();
 }
+//tela de aviso
+void tela_aviso()
+{
+    cabecalho();
+    printf("\n%n Enviar Aviso %s\n\n", motorista.nome);
+    
+    //ocorrencias
+    printf("  Tipos de ocorrência:\n\n");
+    printf("  %s--- Ônibus ---%s\n", COR_CINZA, COR_RESET);
+    printf("   1. Pane mecânica\n");
+    printf("   2. Pane elétrica\n");
+    printf("   3. Acidente\n");
+    printf("   4. Pneu furado\n");
+    printf("   5. Problema com portas\n");
+    printf("   6. Ar-condicionado com defeito\n\n");
+    printf("  %s--- Rota / Linha ---%s\n");
+    printf("   7. Trânsito intenso\n");
+    printf("   8. Bloqueio na via / desvio\n");
+    printf("   9. Obra na pista\n");
+    printf("  10. Alagamento / via intransitável\n");
+    printf("  11. Manifestação na rota\n");
+    printf("  12. Ponto de parada obstruído\n\n");
+    printf("  %s--- Passageiros / Segurança ---%s\n");
+    printf("  13. Passageiro com mal-estar\n");
+    printf("  14. Ocorrência de segurança\n");
+    printf("  15. Superlotação\n");
+    printf("  16. Outros\n\n");
 
+    const char *tipos[] =
+    {
+        "Pane mecânica", "Pane elétrica", "Acidente", "Pneu furado",
+        "Problema com portas", "Ar-condicionado com defeito",
+        "Trânsito intenso", "Bloqueio na via / desvio", "Obra na pista",
+        "Alagamento / via intransitável", "Manifestação na rota",
+        "Ponto de parada obstruído", "Passageiro com mal-estar",
+        "Ocorrência de segurança", "Superlotação", "Outros"
+    };
+    char buf[16]; //buffer para ler a opção
+    int opcao_tipo = 0;
+    ler_linha(" Tipo (1-16): ", buf, sizeof(buf));
+    opcao_tipo = atoi(buf); //atoi converte string para inteiro
+    if (opcao_tipo < 1 || opcao_tipo > 16) 
+    {
+        printf("%s  Opção inválida.%s\n", COR_VERMELHO, COR_RESET);
+        pausar();
+        return;
+    }
+    printf("\n  Gravidade:\n");
+    printf("   %s1. BAIXA%s\n");
+    printf("   %s2. MÉDIA%s\n");
+    printf("   %s3. ALTA%s\n");
 
-//em progresso, ta indo bem
+    const char *gravidades[] = {"BAIXA", "MÉDIA", "ALTA"}; /* Textos das gravidades */
+    int opcao_grav = 0;
+    ler_linha("  Gravidade (1-3): ", buf, sizeof(buf));
+    opcao_grav = atoi(buf);
+    if (opcao_grav < 1 || opcao_grav > 3) 
+    {
+        printf("%s  Opção inválida.%s\n");
+        pausar(); return; 
+    }
+    //le a localizacao e descricao como texto livre
+    char local[100];
+    char descricao[500];
+    ler_linha(" Localização atual: ", local, sizeof(local));
+    if(strlen(local) == 0)
+    {
+        printf("%s  Localização não pode estar vazia.%s\n");
+        pausar();
+        return;
+    }
+    ler_linha(" Descrição: ", descricao, sizeof(descricao));
+    if(strlen(descricao) == 0)
+    {
+        printf("%s  Descrição não pode estar vazia.%s\n");
+        pausar();
+        return;
+    }
+    /* Pega um ponteiro para a próxima posição livre na lista de avisos.
+       &motorista.avisos[total_avisos] = endereço da próxima "vaga" no array */
+    Aviso *a = &motorista.avisos[motorista.total_avisos];
+ 
+    /* Preenche todos os campos do novo aviso */
+    gerar_protocolo(a->protocolo);                              /* Cria o código único */
+    obter_hora(a->hora, sizeof(a->hora));                       /* Registra o horário  */
+    strncpy(a->tipo,      tipos[opcao_tipo - 1],      sizeof(a->tipo)      - 1); /* opcao-1 porque o array começa em 0 */
+    strncpy(a->gravidade, gravidades[opcao_grav - 1], sizeof(a->gravidade) - 1);
+    strncpy(a->local,     local,                      sizeof(a->local)     - 1);
+    strncpy(a->descricao, desc,                       sizeof(a->descricao) - 1);
+ 
+    motorista.total_avisos++; /* Incrementa o contador APÓS preencher o aviso */
+    salvar_aviso_txt(a);      /* Grava o aviso no arquivo .txt */
+ 
+    printf("\n%s  Protocolo: %s%s%s\n", COR_CINZA, COR_AMARELO, a->protocolo, COR_RESET);
+    pausar();
+}
