@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,17 +15,30 @@
     <div class="apresentacao">
         <h2>Sistema de Controle de Tráfego BRT</h2>
         <br>
-        <h4>Projeto proposto pelo professor Roni da disciplina de Residência Tecnológica <br>
-        com o intuito de desenvolver habilidades em C e colaboração em grupo.</h3>
+        <p>Projeto proposto pelo professor Roni da disciplina de Residência Tecnológica <br>
+        com o intuito de desenvolver habilidades em C e colaboração em grupo.</p>
     </div>
     <br>
     <br>
-    <h2>Rotas</h2>
-    <br>
-    <div class="rotas-onibus">
+    <div class="row">
+        <div class="card-relatorios">
+        <h2>Rotas</h2>
         <br>
-        <h3>Digite o número da linha:</h2>
-        <input type="text">
+        <p>Encontre a rota do seu ônibus</p>
+        <br>
+        <h4>Número da rota: <input type="number" placeholder="Ex: 123" class="input-linha"></h4>
+        <br>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d31600.736480581018!2d-34.981315936257005!3d-8.09209409542826!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e3!4m5!1s0x7ab1e9f4913b659%3A0xffbcf5618af01a96!2sEsta%C3%A7%C3%A3o%20Barro%2C%20Av.%20Central%2C%20S%2FN%20-%20Barro%2C%20Recife%20-%20PE%2C%2050930-310!3m2!1d-8.0887827!2d-34.945434!4m5!1s0x7ab1c477e3c25cf%3A0x7a10cd28dfdae47e!2sCavaleiro%2C%20Jaboat%C3%A3o%20dos%20Guararapes%20-%20PE!3m2!1d-8.0915532!2d-34.9754651!5e0!3m2!1spt-BR!2sbr!4v1774369162567!5m2!1spt-BR!2sbr" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+
+        <div class="card-relatorios">
+        <h2>Estações</h2>
+        <br>
+        <p>Lista de dados com C</p>
+        <br>
+        <h4>ID: <input type="number" placeholder="Estação " class="input-linha"></h4>
+        <br>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15801.76257458919!2d-34.90179891284179!3d-8.056454399999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x7ab18956f015e31%3A0x96827551758e99c8!2sEsta%C3%A7%C3%A3o%20BRT%2013%20de%20Maio!5e0!3m2!1spt-BR!2sbr!4v1774369836031!5m2!1spt-BR!2sbr" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>        </div>
     </div>
 </body>
 </html>
