@@ -1,7 +1,6 @@
 # Sistema de Controle de Tráfego Urbano (BRT)
 
 > **Documentação Detalhada:** [Acesse o Google Docs aqui](https://docs.google.com/document/d/1pH7ctoyV4JyCKIjl5qHV-YHrib_jUnsV4zVQYIZQsCw/edit?usp=sharing)
-> **Fluxograma:** 
 
 > **Status:** Em desenvolvimento 🚧
 
