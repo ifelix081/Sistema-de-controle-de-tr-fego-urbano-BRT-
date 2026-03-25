@@ -2,7 +2,7 @@
 
 Sistema de gerenciamento e controle de operações de ônibus BRT (Bus Rapid Transit), com foco em organização de dados, simulação de operações e base para evolução em tempo real.
 
-📄 **Documentação completa:** (https://docs.google.com/document/d/1pH7ctoyV4JyCKIjl5qHV-YHrib_jUnsV4zVQYIZQsCw/edit?tab=t.0)  
+📄 **Documentação Detalhada:** (https://docs.google.com/document/d/1pH7ctoyV4JyCKIjl5qHV-YHrib_jUnsV4zVQYIZQsCw/edit?tab=t.0)  
 🚧 **Status:** Em desenvolvimento  
 
 👨‍💻 **Autores:** Breno Matheus, Italo Vinicius, Murilo Pussa, Yasmim Lais  
