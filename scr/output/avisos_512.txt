@@ -1,0 +1,16 @@
+======================================================
+      SISTEMA DE AVISOS - SISBUS
+      Motorista : italo  |  Mat.: 512
+      Linha     : 901  |  Veiculo: 1
+      Inicio    : 27/03/2026 05:16:10
+======================================================
+
+------------------------------------------------------
+  AVISO #1 - PROTOCOLO: AVS-080317
+------------------------------------------------------
+  Data/Hora  : 27/03/2026 05:16:39
+  Tipo       : Acidente
+  Gravidade  : ALTA
+  Localizacao: caruaru
+  Descricao  : Um fdp bateu no onibus e fudeu tudo
+
