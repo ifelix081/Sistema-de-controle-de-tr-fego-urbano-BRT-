@@ -2,231 +2,347 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <string.h>
-#include <windows.h>
 
 // ═══════════════════════════════════════
 //              STRUCTS
 // ═══════════════════════════════════════
 
-// Struct que guarda os dados de um onibus
 struct BRT_onibus
 {
-    int  linha;           // numero da linha que o onibus pertence
-    int  numero_onibus;   // numero de identificacao do onibus
-    char placa[8];        // placa do onibus (ex: ABC-1234)
-    char garagem[50];     // nome da garagem onde o onibus fica
-    char motorista[50];   // nome do motorista responsavel
-    char turno[20];       // turno de trabalho (manha, tarde, noite)
+    int  linha;
+    int  numero_onibus;
+    char placa[8];
+    char garagem[50];
+    char motorista[50];
+    char turno[20];
 };
 
-// Struct que guarda os dados de uma parada
 struct BRT_paradas
 {
-    int  codigo_parada;   // numero de identificacao da parada
-    char endereco[100];   // endereco completo da parada
+    int  codigo_parada;
+    char endereco[100];
 };
 
-// Struct que representa a relacao entre linha e parada
 struct BRT_linhas
 {
-    int codigo_linha;     // codigo da linha
-    int codigo_parada;    // codigo de uma parada pertencente a essa linha
+    int codigo_linha;
+    int codigo_parada;
 };
 
-// Struct que guarda os dados de um motorista
 struct BRT_motorista
 {
-    char nome[50];        // nome completo do motorista
-    char cpf[14];         // CPF no formato 000.000.000-00
-    char telefone[15];    // telefone de contato
-    int  linha_atuacao;   // numero da linha em que o motorista trabalha
+    char nome[50];
+    char cpf[14];
+    char telefone[15];
+    int  linha_atuacao;
 };
 
 // ═══════════════════════════════════════
-//              FUNCOES
+//         FUNÇÕES DE VALIDAÇÃO
 // ═══════════════════════════════════════
 
-// Cadastra um novo onibus e salva no arquivo relatorio_brt.txt
+int campo_vazio(char texto[])
+{
+    return strlen(texto) == 0;
+}
+
+int placa_existe(char placa[])
+{
+    FILE *relabrt = fopen("relatorio_brt.txt", "r");
+    if (relabrt == NULL)
+        return 0;
+
+    struct BRT_onibus brt;
+
+    while (fscanf(relabrt, "%d %d %s %s %s %s",
+                  &brt.linha, &brt.numero_onibus,
+                  brt.placa, brt.garagem,
+                  brt.motorista, brt.turno) != EOF)
+    {
+        if (strcmp(brt.placa, placa) == 0)
+        {
+            fclose(relabrt);
+            return 1;
+        }
+    }
+
+    fclose(relabrt);
+    return 0;
+}
+
+int parada_existe(int codigo)
+{
+    FILE *relaparada = fopen("relatorio_paradas.txt", "r");
+    if (relaparada == NULL)
+        return 0;
+
+    struct BRT_paradas parada;
+
+    while (fscanf(relaparada, "%d %99[^\n]",
+                  &parada.codigo_parada,
+                  parada.endereco) != EOF)
+    {
+        if (parada.codigo_parada == codigo)
+        {
+            fclose(relaparada);
+            return 1;
+        }
+    }
+
+    fclose(relaparada);
+    return 0;
+}
+
+int cpf_existe(char cpf[])
+{
+    FILE *relamotorista = fopen("relatorio_motorista.txt", "r");
+    if (relamotorista == NULL)
+        return 0;
+
+    char linha[200];
+    char nome[50], cpf_lido[14], telefone[15];
+    int linha_atuacao;
+
+    while (fgets(linha, sizeof(linha), relamotorista))
+    {
+        sscanf(linha, "%49[^;];%13[^;];%14[^;];%d",
+               nome, cpf_lido, telefone, &linha_atuacao);
+
+        if (strcmp(cpf_lido, cpf) == 0)
+        {
+            fclose(relamotorista);
+            return 1;
+        }
+    }
+
+    fclose(relamotorista);
+    return 0;
+}
+
+// ═══════════════════════════════════════
+//              CADASTRO ONIBUS
+// ═══════════════════════════════════════
+
 void cadastro()
 {
     struct BRT_onibus brt;
 
-    // Abre o arquivo em modo "append" (adiciona sem apagar o que ja tem)
-    FILE *relabrt = fopen("relatorio_brt.txt", "a");
-    if (relabrt == NULL)
+    printf("\n---Cadastro de BRT---\n");
+
+    printf("Digite o numero da linha: ");
+    scanf("%d", &brt.linha);
+
+    printf("Digite o numero do onibus: ");
+    scanf("%d", &brt.numero_onibus);
+
+    printf("Digite a placa: ");
+    scanf("%s", brt.placa);
+
+    if (campo_vazio(brt.placa))
     {
-        printf("Erro ao abrir o arquivo\n");
+        printf("Placa nao pode ser vazia!\n");
         return;
     }
 
-    // Lê os dados do onibus digitados pelo usuario
-    printf("---Cadastro de BRT---\n");
-    printf("Digite o numero da linha: ");
-    scanf("%d", &brt.linha);
-    printf("Digite o numero do onibus: ");
-    scanf("%d", &brt.numero_onibus);
-    printf("Digite a placa: ");
-    scanf("%s", brt.placa);
+    if (placa_existe(brt.placa))
+    {
+        printf("Essa placa ja esta cadastrada!\n");
+        return;
+    }
+
     printf("Digite a garagem: ");
     scanf("%s", brt.garagem);
+
     printf("Digite o motorista: ");
     scanf("%s", brt.motorista);
+
     printf("Digite o turno: ");
     scanf("%s", brt.turno);
 
-    // Salva todos os dados em uma linha no arquivo
+    FILE *relabrt = fopen("relatorio_brt.txt", "a");
+
     fprintf(relabrt, "%d %d %s %s %s %s\n",
             brt.linha, brt.numero_onibus, brt.placa,
             brt.garagem, brt.motorista, brt.turno);
 
     fclose(relabrt);
+
     printf("Cadastro realizado com sucesso!\n");
 }
 
-// Cadastra uma nova parada e salva no arquivo relatorio_paradas.txt
+// ═══════════════════════════════════════
+//              CADASTRO PARADAS
+// ═══════════════════════════════════════
+
 void cadastro_paradas()
 {
     struct BRT_paradas parada;
 
-    FILE *relaparada = fopen("relatorio_paradas.txt", "a");
-    if (relaparada == NULL)
+    printf("\n---Cadastro de Paradas---\n");
+
+    printf("Digite o codigo da parada: ");
+    scanf("%d", &parada.codigo_parada);
+
+    if (parada_existe(parada.codigo_parada))
     {
-        printf("Erro ao abrir o arquivo\n");
+        printf("Esse codigo ja existe!\n");
         return;
     }
 
-    // Lê o codigo e o endereco da parada
-    printf("---Cadastro de Paradas---\n");
-    printf("Digite o codigo da parada: ");
-    scanf("%d", &parada.codigo_parada);
     printf("Digite o endereco: ");
-    scanf(" %99[^\n]", parada.endereco); // lê a linha inteira, incluindo espacos
+    scanf(" %99[^\n]", parada.endereco);
 
-    fprintf(relaparada, "%d %s\n", parada.codigo_parada, parada.endereco);
+    if (campo_vazio(parada.endereco))
+    {
+        printf("Endereco nao pode ser vazio!\n");
+        return;
+    }
+
+    FILE *relaparada = fopen("relatorio_paradas.txt", "a");
+
+    fprintf(relaparada, "%d %s\n",
+            parada.codigo_parada,
+            parada.endereco);
 
     fclose(relaparada);
+
     printf("Cadastro realizado com sucesso!\n");
 }
 
-// Cadastra um novo motorista e salva no arquivo relatorio_motorista.txt
+// ═══════════════════════════════════════
+//          CADASTRO MOTORISTA
+// ═══════════════════════════════════════
+
 void cadastro_motorista()
 {
     struct BRT_motorista motorista;
 
-    FILE *relamotorista = fopen("relatorio_motorista.txt", "a");
-    if (relamotorista == NULL)
+    printf("\n---Cadastro de Motorista---\n");
+
+    printf("Digite o nome: ");
+    scanf(" %49[^\n]", motorista.nome);
+
+    if (campo_vazio(motorista.nome))
     {
-        printf("Erro ao abrir o arquivo\n");
+        printf("Nome nao pode ser vazio!\n");
         return;
     }
 
-    // Lê os dados pessoais e profissionais do motorista
-    printf("---Cadastro de Motorista---\n");
-    printf("Digite o nome: ");
-    scanf(" %49[^\n]", motorista.nome);    // lê nome com espacos
     printf("Digite o CPF: ");
-    scanf(" %13s", motorista.cpf);
+    scanf("%s", motorista.cpf);
+
+    if (campo_vazio(motorista.cpf))
+    {
+        printf("CPF nao pode ser vazio!\n");
+        return;
+    }
+
+    if (cpf_existe(motorista.cpf))
+    {
+        printf("CPF ja cadastrado!\n");
+        return;
+    }
+
     printf("Digite o telefone: ");
-    scanf(" %14s", motorista.telefone);
+    scanf("%s", motorista.telefone);
+
     printf("Digite a linha de atuacao: ");
     scanf("%d", &motorista.linha_atuacao);
 
-    fprintf(relamotorista, "%s %s %s %d\n",
-            motorista.nome, motorista.cpf,
-            motorista.telefone, motorista.linha_atuacao);
+    FILE *relamotorista = fopen("relatorio_motorista.txt", "a");
+
+    // AGORA SALVA COM ; (formato seguro)
+    fprintf(relamotorista, "%s;%s;%s;%d\n",
+            motorista.nome,
+            motorista.cpf,
+            motorista.telefone,
+            motorista.linha_atuacao);
 
     fclose(relamotorista);
+
     printf("Cadastro realizado com sucesso!\n");
 }
 
-// Cadastra uma linha com suas paradas e salva no arquivo relatorio_linhas.txt
+// ═══════════════════════════════════════
+//              CADASTRO LINHAS
+// ═══════════════════════════════════════
+
 void cadastro_linhas()
 {
     struct BRT_linhas linha;
     char continuar;
 
     FILE *relalinha = fopen("relatorio_linhas.txt", "a");
-    if (relalinha == NULL)
-    {
-        printf("Erro ao abrir o arquivo\n");
-        return;
-    }
 
-    printf("---Cadastro de Linhas---\n");
+    printf("\n---Cadastro de Linhas---\n");
+
     printf("Digite o codigo da linha: ");
     scanf("%d", &linha.codigo_linha);
-    fprintf(relalinha, "%d", linha.codigo_linha); // salva o codigo da linha
 
-    // Permite cadastrar varias paradas para a mesma linha
+    fprintf(relalinha, "%d", linha.codigo_linha);
+
     do
     {
         printf("Digite o codigo da parada: ");
         scanf("%d", &linha.codigo_parada);
-        fprintf(relalinha, " %d", linha.codigo_parada); // adiciona a parada na mesma linha do arquivo
-        printf("Parada cadastrada com sucesso!\n");
+
+        fprintf(relalinha, " %d", linha.codigo_parada);
+
         printf("Deseja cadastrar mais uma parada? (s/n): ");
         scanf(" %c", &continuar);
-    } while (continuar == 's' || continuar == 'S'); // continua enquanto usuario digitar 's'
+
+    } while (continuar == 's' || continuar == 'S');
 
     fprintf(relalinha, "\n");
+
     fclose(relalinha);
+
     printf("Cadastro de linhas finalizado!\n");
 }
 
-// Exibe todos os dados cadastrados lendo diretamente dos arquivos
+// ═══════════════════════════════════════
+//              RELATORIO
+// ═══════════════════════════════════════
+
 void relatorio_geral()
 {
-    char linha[200]; // buffer para guardar cada linha lida dos arquivos
+    char linha[200];
 
-    // Abre e imprime o arquivo de onibus
-    printf("\n--- Onibus Cadastrados ---\n");
-    FILE *relabrt = fopen("relatorio_brt.txt", "r");
-    if (relabrt == NULL)
-        printf("Nenhum onibus cadastrado.\n");
-    else
+    printf("\n--- ONIBUS ---\n");
+    FILE *f = fopen("relatorio_brt.txt", "r");
+    if (f != NULL)
     {
-        while (fgets(linha, sizeof(linha), relabrt)) // le linha por linha
+        while (fgets(linha, sizeof(linha), f))
             printf("%s", linha);
-        fclose(relabrt);
+        fclose(f);
     }
 
-    // Abre e imprime o arquivo de paradas
-    printf("\n--- Paradas Cadastradas ---\n");
-    FILE *relaparada = fopen("relatorio_paradas.txt", "r");
-    if (relaparada == NULL)
-        printf("Nenhuma parada cadastrada.\n");
-    else
+    printf("\n--- PARADAS ---\n");
+    f = fopen("relatorio_paradas.txt", "r");
+    if (f != NULL)
     {
-        while (fgets(linha, sizeof(linha), relaparada))
+        while (fgets(linha, sizeof(linha), f))
             printf("%s", linha);
-        fclose(relaparada);
+        fclose(f);
     }
 
-    // Abre e imprime o arquivo de motoristas
-    printf("\n--- Motoristas Cadastrados ---\n");
-    FILE *relamotorista = fopen("relatorio_motorista.txt", "r");
-    if (relamotorista == NULL)
-        printf("Nenhum motorista cadastrado.\n");
-    else
+    printf("\n--- MOTORISTAS ---\n");
+    f = fopen("relatorio_motorista.txt", "r");
+    if (f != NULL)
     {
-        while (fgets(linha, sizeof(linha), relamotorista))
+        while (fgets(linha, sizeof(linha), f))
             printf("%s", linha);
-        fclose(relamotorista);
+        fclose(f);
     }
 
-    // Abre e imprime o arquivo de linhas
-    printf("\n--- Linhas Cadastradas ---\n");
-    FILE *relalinha = fopen("relatorio_linhas.txt", "r");
-    if (relalinha == NULL)
-        printf("Nenhuma linha cadastrada.\n");
-    else
+    printf("\n--- LINHAS ---\n");
+    f = fopen("relatorio_linhas.txt", "r");
+    if (f != NULL)
     {
-        while (fgets(linha, sizeof(linha), relalinha))
+        while (fgets(linha, sizeof(linha), f))
             printf("%s", linha);
-        fclose(relalinha);
+        fclose(f);
     }
-
-    printf("\n===============================\n");
 }
 
 // ═══════════════════════════════════════
@@ -235,35 +351,30 @@ void relatorio_geral()
 
 int main()
 {
-    int opcao; // guarda a opcao digitada pelo usuario
+    int opcao;
 
-    // Loop principal: fica rodando ate o usuario escolher sair (opcao 0)
     do
     {
-        // Exibe o menu de opcoes
-        printf("\n===================================\n");
+        printf("\n============================\n");
         printf("        SISTEMA BRT\n");
-        printf("===================================\n");
+        printf("============================\n");
         printf("1 - Cadastrar Onibus\n");
         printf("2 - Cadastrar Parada\n");
         printf("3 - Cadastrar Motorista\n");
         printf("4 - Cadastrar Linha\n");
         printf("5 - Relatorio Geral\n");
         printf("0 - Sair\n");
-        printf("===================================\n");
-        printf("Escolha uma opcao: ");
+        printf("============================\n");
+        printf("Escolha: ");
         scanf("%d", &opcao);
 
-        // Chama a funcao correspondente a opcao escolhida
         switch (opcao)
         {
-            case 1: cadastro();            break;
-            case 2: cadastro_paradas();    break;
-            case 3: cadastro_motorista();  break;
-            case 4: cadastro_linhas();     break;
-            case 5: relatorio_geral();     break;
-            case 0: printf("Saindo...\n"); break;
-            default: printf("Opcao invalida!\n"); // caso o usuario digite algo fora do menu
+            case 1: cadastro(); break;
+            case 2: cadastro_paradas(); break;
+            case 3: cadastro_motorista(); break;
+            case 4: cadastro_linhas(); break;
+            case 5: relatorio_geral(); break;
         }
 
     } while (opcao != 0);
