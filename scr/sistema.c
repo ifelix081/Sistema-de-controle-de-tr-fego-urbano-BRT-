@@ -368,7 +368,7 @@ void login_motorista()
 }
 
 // ======================================================
-//                    ENVIAR AVISO
+//                    ENVIAR AVISO (COM MENUS)
 // ======================================================
 
 void enviar_aviso()
@@ -378,36 +378,151 @@ void enviar_aviso()
     cabecalho("ENVIAR AVISO");
 
     obter_data_hora(a->data_hora, sizeof(a->data_hora));
-    sprintf(a->protocolo, "AV-%04d", rand()%9999);
+    sprintf(a->protocolo, "AV-%04d", rand() % 9999);
 
-    printf("Tipo do problema: ");
-    scanf(" %49[^\n]", a->tipo);
+    // --- TIPO DO PROBLEMA ---
+    printf("=== TIPO DO OCORRIDO ===\n");
+    printf("1 - Acidente de transito\n");
+    printf("2 - Falha mecanica\n");
+    printf("3 - Passageiro com mal estar\n");
+    printf("4 - Vandalismo / depredacao\n");
+    printf("5 - Problema na via\n");
+    printf("6 - Conflito com passageiro\n");
+    printf("7 - Atraso operacional\n");
+    printf("8 - Outro\n");
+    printf("Escolha: ");
 
-    printf("Gravidade: ");
-    scanf(" %19[^\n]", a->gravidade);
+    int op_tipo;
+    scanf("%d", &op_tipo);
 
-    printf("Local: ");
-    scanf(" %99[^\n]", a->local);
+    switch(op_tipo)
+    {
+        case 1: strcpy(a->tipo, "Acidente de transito"); break;
+        case 2: strcpy(a->tipo, "Falha mecanica"); break;
+        case 3: strcpy(a->tipo, "Passageiro com mal estar"); break;
+        case 4: strcpy(a->tipo, "Vandalismo / depredacao"); break;
+        case 5: strcpy(a->tipo, "Problema na via"); break;
+        case 6: strcpy(a->tipo, "Conflito com passageiro"); break;
+        case 7: strcpy(a->tipo, "Atraso operacional"); break;
+        default: strcpy(a->tipo, "Outro"); break;
+    }
 
-    printf("Descricao: ");
-    scanf(" %199[^\n]", a->descricao);
+    // --- GRAVIDADE ---
+    printf("\n=== GRAVIDADE ===\n");
+    printf("1 - Leve (sem feridos, sem bloqueio)\n");
+    printf("2 - Moderada (interferencia no transito)\n");
+    printf("3 - Grave (feridos ou via bloqueada)\n");
+    printf("4 - Critica (emergencia imediata)\n");
+    printf("Escolha: ");
 
-    FILE *f = fopen("avisos.txt", "a");
+    int op_grav;
+    scanf("%d", &op_grav);
 
-    fprintf(f, "%s | %s | %s | %s | %s | %s | %s\n",
-            motorista.nome,
-            motorista.linha,
-            a->protocolo,
-            a->tipo,
-            a->gravidade,
-            a->local,
-            a->descricao);
+    switch(op_grav)
+    {
+        case 1: strcpy(a->gravidade, "Leve"); break;
+        case 2: strcpy(a->gravidade, "Moderada"); break;
+        case 3: strcpy(a->gravidade, "Grave"); break;
+        case 4: strcpy(a->gravidade, "Critica"); break;
+        default: strcpy(a->gravidade, "Leve"); break;
+    }
 
-    fclose(f);
+    // --- LOCAL ---
+    printf("\n=== LOCAL DO OCORRIDO ===\n");
+    printf("1 - Dentro do veiculo\n");
+    printf("2 - Na parada / estacao\n");
+    printf("3 - Na via publica\n");
+    printf("4 - No terminal\n");
+    printf("5 - Na garagem\n");
+    printf("6 - Outro ponto da rota\n");
+    printf("Escolha: ");
 
-    motorista.total_avisos++;
+    int op_local;
+    scanf("%d", &op_local);
 
-    printf("\nAviso enviado com sucesso!\n");
+    switch(op_local)
+    {
+        case 1: strcpy(a->local, "Dentro do veiculo"); break;
+        case 2: strcpy(a->local, "Na parada / estacao"); break;
+        case 3: strcpy(a->local, "Na via publica"); break;
+        case 4: strcpy(a->local, "No terminal"); break;
+        case 5: strcpy(a->local, "Na garagem"); break;
+        default: strcpy(a->local, "Outro ponto da rota"); break;
+    }
+
+    // --- O QUE ACONTECEU ---
+    printf("\n=== O QUE ACONTECEU ===\n");
+    printf("1 - Colisao entre veiculos\n");
+    printf("2 - Atropelamento\n");
+    printf("3 - Pneu furado\n");
+    printf("4 - Motor superaquecido\n");
+    printf("5 - Porta com defeito\n");
+    printf("6 - Passageiro desmaiou\n");
+    printf("7 - Passageiro passou mal\n");
+    printf("8 - Briga entre passageiros\n");
+    printf("9 - Buraco / obstaculo na pista\n");
+    printf("10 - Semaforo ou sinal com defeito\n");
+    printf("11 - Alagamento na via\n");
+    printf("12 - Objeto danificado no veiculo\n");
+    printf("13 - Outro\n");
+    printf("Escolha: ");
+
+    int op_desc;
+    scanf("%d", &op_desc);
+
+    switch(op_desc)
+    {
+        case 1:  strcpy(a->descricao, "Colisao entre veiculos"); break;
+        case 2:  strcpy(a->descricao, "Atropelamento"); break;
+        case 3:  strcpy(a->descricao, "Pneu furado"); break;
+        case 4:  strcpy(a->descricao, "Motor superaquecido"); break;
+        case 5:  strcpy(a->descricao, "Porta com defeito"); break;
+        case 6:  strcpy(a->descricao, "Passageiro desmaiou"); break;
+        case 7:  strcpy(a->descricao, "Passageiro passou mal"); break;
+        case 8:  strcpy(a->descricao, "Briga entre passageiros"); break;
+        case 9:  strcpy(a->descricao, "Buraco / obstaculo na pista"); break;
+        case 10: strcpy(a->descricao, "Semaforo ou sinal com defeito"); break;
+        case 11: strcpy(a->descricao, "Alagamento na via"); break;
+        case 12: strcpy(a->descricao, "Objeto danificado no veiculo"); break;
+        default: strcpy(a->descricao, "Outro"); break;
+    }
+
+    // --- CONFIRMACAO ---
+    printf("\n%s\n", DIV);
+    printf("PROTOCOLO : %s\n", a->protocolo);
+    printf("TIPO      : %s\n", a->tipo);
+    printf("GRAVIDADE : %s\n", a->gravidade);
+    printf("LOCAL     : %s\n", a->local);
+    printf("OCORRIDO  : %s\n", a->descricao);
+    printf("DATA/HORA : %s\n", a->data_hora);
+    printf("%s\n", DIV);
+
+    printf("Confirmar envio? (s/n): ");
+    char confirmar;
+    scanf(" %c", &confirmar);
+
+    if(confirmar == 's' || confirmar == 'S')
+    {
+        FILE *f = fopen("avisos.txt", "a");
+        fprintf(f, "%s | %s | %s | %s | %s | %s | %s | %s\n",
+                motorista.nome,
+                motorista.linha,
+                a->protocolo,
+                a->data_hora,
+                a->tipo,
+                a->gravidade,
+                a->local,
+                a->descricao);
+        fclose(f);
+
+        motorista.total_avisos++;
+        printf("\nAviso enviado com sucesso!\n");
+    }
+    else
+    {
+        printf("\nAviso cancelado.\n");
+    }
+
     pausar();
 }
 
