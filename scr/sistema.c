@@ -3,625 +3,684 @@
 #include <locale.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
-/* ======================================================
-   SISTEMA BRT COMPLETO (VERSÃO FINAL PROFISSIONAL)
-   - Tela inicial
-   - Login Admin
-   - Login Motorista
-   - Cadastro de ônibus
-   - Cadastro de paradas
-   - Cadastro de motoristas
-   - Cadastro de linhas
-   - Sistema de aviso do motorista
-   - Relatório geral
-   ====================================================== */
+#define SEP  "===================================================="
+#define DIV  "----------------------------------------------------"
+#define MAX  20
 
-#define LINHA "===================================================="
-#define DIV   "----------------------------------------------------"
+typedef struct {
+    int  lin;
+    int  num;
+    char pla[10];
+    char gar[50];
+    char mot[50];
+    char tur[20];
+} Onibus;
 
-// ======================================================
-//                    FUNÇÕES VISUAIS
-// ======================================================
+typedef struct {
+    int  cod;
+    char end[100];
+} Parada;
 
-void limpar_tela()
+typedef struct {
+    int codLin;
+    int codPar;
+} Linha;
+
+typedef struct {
+    char nom[50];
+    char cpf[15];
+    char tel[16];
+    int  lin;
+} Motorista;
+
+typedef struct {
+    char prot[20];
+    char dth[25];
+    char tip[50];
+    char grav[20];
+    char loc[100];
+    char desc[200];
+} Aviso;
+
+typedef struct {
+    char mat[15];
+    char nom[50];
+    char lin[20];
+    char vei[20];
+    char ini[25];
+    int  ativo;
+    Aviso av[MAX];
+    int  tot;
+} Sessao;
+
+Sessao ses;
+
+void limpar()
 {
     system("cls || clear");
 }
 
 void pausar()
 {
-    printf("\nPressione ENTER para continuar...");
+    printf("\n  Pressione ENTER para continuar...");
     getchar();
     getchar();
 }
 
-void cabecalho(const char *titulo)
+void dataHora(char *buf, int tam)
 {
-    limpar_tela();
-    printf("%s\n", LINHA);
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    strftime(buf, tam, "%d/%m/%Y %H:%M:%S", tm);
+}
+
+void trim(char *s)
+{
+    int i = 0, f = strlen(s) - 1;
+    while (isspace((unsigned char)s[i])) i++;
+    while (f > i && isspace((unsigned char)s[f])) f--;
+    memmove(s, s + i, f - i + 1);
+    s[f - i + 1] = '\0';
+}
+
+void cabec(const char *tit)
+{
+    limpar();
+    printf("\n%s\n", SEP);
     printf("        SISTEMA DE CONTROLE BRT\n");
-    printf("%s\n", LINHA);
-    printf("%s\n", titulo);
+    printf("%s\n", SEP);
+    printf("  %s\n", tit);
     printf("%s\n\n", DIV);
 }
 
-// ======================================================
-//                    STRUCTS ADMIN
-// ======================================================
-
-struct BRT_onibus
+void ok(const char *msg)
 {
-    int  linha;
-    int  numero_onibus;
-    char placa[10];
-    char garagem[50];
-    char motorista[50];
-    char turno[20];
-};
-
-struct BRT_paradas
-{
-    int  codigo_parada;
-    char endereco[100];
-};
-
-struct BRT_linhas
-{
-    int codigo_linha;
-    int codigo_parada;
-};
-
-struct BRT_motorista
-{
-    char nome[50];
-    char cpf[14];
-    char telefone[15];
-    int  linha_atuacao;
-};
-
-// ======================================================
-//                    STRUCTS MOTORISTA
-// ======================================================
-
-struct Aviso
-{
-    char protocolo[20];
-    char data_hora[25];
-    char tipo[50];
-    char gravidade[20];
-    char local[100];
-    char descricao[200];
-};
-
-struct LoginMotorista
-{
-    char matricula[15];
-    char nome[50];
-    char linha[20];
-    char veiculo[20];
-    char inicio_jornada[25];
-    int logado;
-    struct Aviso avisos[20];
-    int total_avisos;
-} motorista;
-
-// ======================================================
-//                    FUNÇÕES AUXILIARES
-// ======================================================
-
-void obter_data_hora(char *buffer, int tamanho)
-{
-    time_t t = time(NULL);
-    struct tm *tm_info = localtime(&t);
-    strftime(buffer, tamanho, "%d/%m/%Y %H:%M:%S", tm_info);
+    printf("\n  [OK] %s\n", msg);
 }
 
-// ======================================================
-//                    LOGIN ADMIN
-// ======================================================
-
-int login_admin()
+void erro(const char *msg)
 {
-    char usuario[20];
-    char senha[20];
+    printf("\n  [!] %s\n", msg);
+}
 
-    cabecalho("LOGIN ADMINISTRADOR");
+void aviso(const char *msg)
+{
+    printf("\n  [~] %s\n", msg);
+}
 
-    printf("Usuario: ");
-    scanf("%s", usuario);
+int confirmar(const char *txt)
+{
+    char r;
+    printf("\n  %s (s/n): ", txt);
+    scanf(" %c", &r);
+    return (r == 's' || r == 'S');
+}
 
-    printf("Senha: ");
-    scanf("%s", senha);
+int vazio(const char *val, const char *campo)
+{
+    if (strlen(val) == 0) {
+        printf("  [!] O campo '%s' nao pode ficar vazio.\n", campo);
+        return 1;
+    }
+    return 0;
+}
 
-    if(strcmp(usuario, "admin") == 0 && strcmp(senha, "1234") == 0)
-    {
-        printf("\nLogin realizado com sucesso!\n");
+int cpfOk(const char *c)
+{
+    if (strlen(c) != 11) return 0;
+    for (int i = 0; i < 11; i++)
+        if (!isdigit((unsigned char)c[i])) return 0;
+    return 1;
+}
+
+int placaOk(const char *p)
+{
+    return strlen(p) >= 7;
+}
+
+int loginAdmin()
+{
+    char usr[20], sen[20];
+
+    cabec("LOGIN — ADMINISTRADOR");
+    printf("  Informe suas credenciais de acesso:\n\n");
+    printf("  Usuario : ");
+    scanf("%19s", usr);
+    printf("  Senha   : ");
+    scanf("%19s", sen);
+
+    if (strcmp(usr, "admin") == 0 && strcmp(sen, "1234") == 0) {
+        ok("Acesso liberado! Bem-vindo ao painel administrativo.");
         pausar();
         return 1;
     }
 
-    printf("\nUsuario ou senha incorretos!\n");
+    erro("Usuario ou senha incorretos. Tente novamente.");
     pausar();
     return 0;
 }
 
-// ======================================================
-//                    CADASTRO ÔNIBUS
-// ======================================================
-
-void cadastrar_onibus()
+void cadOnibus()
 {
-    struct BRT_onibus brt;
+    Onibus b;
+    int tent = 0;
 
-    cabecalho("CADASTRO DE ÔNIBUS");
+    cabec("CADASTRO DE ONIBUS");
+    printf("  Preencha os dados do veiculo:\n\n");
 
-    printf("Numero da linha: ");
-    scanf("%d", &brt.linha);
+    printf("  Numero da linha    : ");
+    while (scanf("%d", &b.lin) != 1 || b.lin <= 0) {
+        erro("Numero de linha invalido. Digite um inteiro positivo.");
+        printf("  Numero da linha    : ");
+        while (getchar() != '\n');
+    }
 
-    printf("Numero do onibus: ");
-    scanf("%d", &brt.numero_onibus);
+    printf("  Numero do onibus   : ");
+    while (scanf("%d", &b.num) != 1 || b.num <= 0) {
+        erro("Numero de onibus invalido.");
+        printf("  Numero do onibus   : ");
+        while (getchar() != '\n');
+    }
 
-    printf("Placa: ");
-    scanf("%s", brt.placa);
+    do {
+        printf("  Placa (ex: ABC1234): ");
+        scanf("%9s", b.pla);
+        if (!placaOk(b.pla)) {
+            erro("Placa invalida. Use pelo menos 7 caracteres.");
+            tent++;
+        }
+    } while (!placaOk(b.pla) && tent < 3);
 
-    printf("Garagem: ");
-    scanf(" %49[^\n]", brt.garagem);
+    if (tent >= 3) {
+        aviso("Muitas tentativas invalidas. Cadastro cancelado.");
+        pausar();
+        return;
+    }
 
-    printf("Motorista: ");
-    scanf(" %49[^\n]", brt.motorista);
+    printf("  Garagem            : ");
+    scanf(" %49[^\n]", b.gar);
+    trim(b.gar);
+    if (vazio(b.gar, "Garagem")) { pausar(); return; }
 
-    printf("Turno: ");
-    scanf("%s", brt.turno);
+    printf("  Motorista          : ");
+    scanf(" %49[^\n]", b.mot);
+    trim(b.mot);
+    if (vazio(b.mot, "Motorista")) { pausar(); return; }
 
-    FILE *f = fopen("relatorio_brt.txt", "a");
+    printf("  Turno (manha/tarde/noite): ");
+    scanf("%19s", b.tur);
 
-    fprintf(f, "%d %d %s %s %s %s\n",
-            brt.linha,
-            brt.numero_onibus,
-            brt.placa,
-            brt.garagem,
-            brt.motorista,
-            brt.turno);
+    printf("\n  Resumo do cadastro:\n");
+    printf("  %s\n", DIV);
+    printf("  Linha    : %d\n", b.lin);
+    printf("  Onibus   : %d\n", b.num);
+    printf("  Placa    : %s\n", b.pla);
+    printf("  Garagem  : %s\n", b.gar);
+    printf("  Motorista: %s\n", b.mot);
+    printf("  Turno    : %s\n", b.tur);
+    printf("  %s\n", DIV);
 
+    if (!confirmar("Confirmar o cadastro deste onibus?")) {
+        aviso("Cadastro cancelado pelo usuario.");
+        pausar();
+        return;
+    }
+
+    FILE *f = fopen("dados_onibus.csv", "a");
+    if (!f) {
+        erro("Nao foi possivel abrir o arquivo de dados.");
+        pausar();
+        return;
+    }
+    fprintf(f, "%d;%d;%s;%s;%s;%s\n", b.lin, b.num, b.pla, b.gar, b.mot, b.tur);
     fclose(f);
 
-    printf("\nÔnibus cadastrado com sucesso!\n");
+    ok("Onibus cadastrado com sucesso no sistema!");
     pausar();
 }
 
-// ======================================================
-//                    CADASTRO PARADAS
-// ======================================================
-
-void cadastrar_parada()
+void cadParada()
 {
-    struct BRT_paradas p;
+    Parada p;
 
-    cabecalho("CADASTRO DE PARADAS");
+    cabec("CADASTRO DE PARADA");
+    printf("  Informe os dados da nova parada:\n\n");
 
-    printf("Codigo da parada: ");
-    scanf("%d", &p.codigo_parada);
+    printf("  Codigo da parada: ");
+    while (scanf("%d", &p.cod) != 1 || p.cod <= 0) {
+        erro("Codigo invalido. Digite um inteiro positivo.");
+        printf("  Codigo da parada: ");
+        while (getchar() != '\n');
+    }
 
-    printf("Endereco: ");
-    scanf(" %99[^\n]", p.endereco);
+    printf("  Endereco completo: ");
+    scanf(" %99[^\n]", p.end);
+    trim(p.end);
+    if (vazio(p.end, "Endereco")) { pausar(); return; }
 
-    FILE *f = fopen("relatorio_paradas.txt", "a");
+    printf("\n  Resumo:\n");
+    printf("  Codigo  : %d\n", p.cod);
+    printf("  Endereco: %s\n", p.end);
 
-    fprintf(f, "%d %s\n", p.codigo_parada, p.endereco);
+    if (!confirmar("Confirmar o cadastro desta parada?")) {
+        aviso("Cadastro cancelado.");
+        pausar();
+        return;
+    }
 
+    FILE *f = fopen("dados_paradas.csv", "a");
+    if (!f) {
+        erro("Erro ao acessar o arquivo de paradas.");
+        pausar();
+        return;
+    }
+    fprintf(f, "%d;%s\n", p.cod, p.end);
     fclose(f);
 
-    printf("\nParada cadastrada com sucesso!\n");
+    ok("Parada cadastrada com sucesso!");
     pausar();
 }
 
-// ======================================================
-//                    CADASTRO MOTORISTA
-// ======================================================
-
-void cadastrar_motorista()
+void cadMotorista()
 {
-    struct BRT_motorista m;
+    Motorista m;
 
-    cabecalho("CADASTRO DE MOTORISTA");
+    cabec("CADASTRO DE MOTORISTA");
+    printf("  Preencha os dados do novo motorista:\n\n");
 
-    printf("Nome: ");
-    scanf(" %49[^\n]", m.nome);
+    printf("  Nome completo   : ");
+    scanf(" %49[^\n]", m.nom);
+    trim(m.nom);
+    if (vazio(m.nom, "Nome")) { pausar(); return; }
 
-    printf("CPF: ");
-    scanf("%s", m.cpf);
+    do {
+        printf("  CPF (so numeros): ");
+        scanf("%14s", m.cpf);
+        if (!cpfOk(m.cpf))
+            erro("CPF invalido. Digite exatamente 11 digitos numericos.");
+    } while (!cpfOk(m.cpf));
 
-    printf("Telefone: ");
-    scanf("%s", m.telefone);
+    printf("  Telefone        : ");
+    scanf("%15s", m.tel);
 
-    printf("Linha de atuacao: ");
-    scanf("%d", &m.linha_atuacao);
+    printf("  Linha de atuacao: ");
+    while (scanf("%d", &m.lin) != 1 || m.lin <= 0) {
+        erro("Numero de linha invalido.");
+        printf("  Linha de atuacao: ");
+        while (getchar() != '\n');
+    }
 
-    FILE *f = fopen("relatorio_motorista.txt", "a");
+    printf("\n  Resumo do cadastro:\n");
+    printf("  %s\n", DIV);
+    printf("  Nome : %s\n", m.nom);
+    printf("  CPF  : %s\n", m.cpf);
+    printf("  Fone : %s\n", m.tel);
+    printf("  Linha: %d\n", m.lin);
+    printf("  %s\n", DIV);
 
-    fprintf(f, "%s;%s;%s;%d\n",
-            m.nome,
-            m.cpf,
-            m.telefone,
-            m.linha_atuacao);
+    if (!confirmar("Confirmar o cadastro deste motorista?")) {
+        aviso("Cadastro cancelado.");
+        pausar();
+        return;
+    }
 
+    FILE *f = fopen("dados_motoristas.csv", "a");
+    if (!f) {
+        erro("Erro ao acessar o arquivo de motoristas.");
+        pausar();
+        return;
+    }
+    fprintf(f, "%s;%s;%s;%d\n", m.nom, m.cpf, m.tel, m.lin);
     fclose(f);
 
-    printf("\nMotorista cadastrado com sucesso!\n");
+    ok("Motorista cadastrado com sucesso!");
     pausar();
 }
 
-// ======================================================
-//                    CADASTRO LINHAS
-// ======================================================
-
-void cadastrar_linhas()
+void cadLinha()
 {
-    struct BRT_linhas linha;
-    char continuar;
+    Linha l;
+    char cont;
+    int tot = 0;
 
-    cabecalho("CADASTRO DE LINHAS");
+    cabec("CADASTRO DE LINHA");
+    printf("  Defina o trajeto da nova linha:\n\n");
 
-    FILE *f = fopen("relatorio_linhas.txt", "a");
+    printf("  Codigo da linha: ");
+    while (scanf("%d", &l.codLin) != 1 || l.codLin <= 0) {
+        erro("Codigo invalido. Digite um inteiro positivo.");
+        printf("  Codigo da linha: ");
+        while (getchar() != '\n');
+    }
 
-    printf("Codigo da linha: ");
-    scanf("%d", &linha.codigo_linha);
+    FILE *f = fopen("dados_linhas.csv", "a");
+    if (!f) {
+        erro("Erro ao acessar o arquivo de linhas.");
+        pausar();
+        return;
+    }
+    fprintf(f, "%d", l.codLin);
 
-    fprintf(f, "%d", linha.codigo_linha);
+    printf("\n  Agora adicione as paradas desta linha.\n\n");
 
-    do
-    {
-        printf("Codigo da parada: ");
-        scanf("%d", &linha.codigo_parada);
-
-        fprintf(f, " %d", linha.codigo_parada);
-
-        printf("Adicionar outra parada? (s/n): ");
-        scanf(" %c", &continuar);
-
-    } while(continuar == 's' || continuar == 'S');
+    do {
+        printf("  Codigo da parada %d: ", tot + 1);
+        while (scanf("%d", &l.codPar) != 1 || l.codPar <= 0) {
+            erro("Codigo invalido.");
+            printf("  Codigo da parada %d: ", tot + 1);
+            while (getchar() != '\n');
+        }
+        fprintf(f, ";%d", l.codPar);
+        tot++;
+        printf("  Deseja adicionar mais uma parada? (s/n): ");
+        scanf(" %c", &cont);
+    } while (cont == 's' || cont == 'S');
 
     fprintf(f, "\n");
     fclose(f);
 
-    printf("\nLinha cadastrada com sucesso!\n");
+    printf("\n  Linha %d cadastrada com %d parada(s).\n", l.codLin, tot);
+    ok("Linha registrada com sucesso no sistema!");
     pausar();
 }
 
-// ======================================================
-//                    RELATÓRIO GERAL
-// ======================================================
-
-void relatorio_geral()
+void exibirArq(const char *arq, const char *tit)
 {
-    char linha[200];
-    FILE *f;
+    char lin[300];
+    int tot = 0;
+    FILE *f = fopen(arq, "r");
 
-    cabecalho("RELATÓRIO GERAL");
-
-    printf("\n--- ÔNIBUS ---\n");
-    f = fopen("relatorio_brt.txt", "r");
-    if(f)
-    {
-        while(fgets(linha, sizeof(linha), f))
-            printf("%s", linha);
-        fclose(f);
+    printf("\n  --- %s ---\n", tit);
+    if (!f) {
+        printf("  (nenhum registro encontrado)\n");
+        return;
     }
-
-    printf("\n--- PARADAS ---\n");
-    f = fopen("relatorio_paradas.txt", "r");
-    if(f)
-    {
-        while(fgets(linha, sizeof(linha), f))
-            printf("%s", linha);
-        fclose(f);
+    while (fgets(lin, sizeof(lin), f)) {
+        printf("  %s", lin);
+        tot++;
     }
-
-    printf("\n--- MOTORISTAS ---\n");
-    f = fopen("relatorio_motorista.txt", "r");
-    if(f)
-    {
-        while(fgets(linha, sizeof(linha), f))
-            printf("%s", linha);
-        fclose(f);
-    }
-
-    printf("\n--- LINHAS ---\n");
-    f = fopen("relatorio_linhas.txt", "r");
-    if(f)
-    {
-        while(fgets(linha, sizeof(linha), f))
-            printf("%s", linha);
-        fclose(f);
-    }
-
-    pausar();
-}
-
-// ======================================================
-//                    LOGIN MOTORISTA
-// ======================================================
-
-void login_motorista()
-{
-    cabecalho("LOGIN DO MOTORISTA");
-
-    printf("Matricula: ");
-    scanf("%s", motorista.matricula);
-
-    printf("Nome: ");
-    scanf(" %49[^\n]", motorista.nome);
-
-    printf("Linha: ");
-    scanf("%s", motorista.linha);
-
-    printf("Veiculo: ");
-    scanf("%s", motorista.veiculo);
-
-    obter_data_hora(motorista.inicio_jornada, sizeof(motorista.inicio_jornada));
-    motorista.total_avisos = 0;
-    motorista.logado = 1;
-
-    printf("\nLogin realizado com sucesso!\n");
-    pausar();
-}
-
-// ======================================================
-//                    ENVIAR AVISO (COM MENUS)
-// ======================================================
-
-void enviar_aviso()
-{
-    struct Aviso *a = &motorista.avisos[motorista.total_avisos];
-
-    cabecalho("ENVIAR AVISO");
-
-    obter_data_hora(a->data_hora, sizeof(a->data_hora));
-    sprintf(a->protocolo, "AV-%04d", rand() % 9999);
-
-    // --- TIPO DO PROBLEMA ---
-    printf("=== TIPO DO OCORRIDO ===\n");
-    printf("1 - Acidente de transito\n");
-    printf("2 - Falha mecanica\n");
-    printf("3 - Passageiro com mal estar\n");
-    printf("4 - Vandalismo / depredacao\n");
-    printf("5 - Problema na via\n");
-    printf("6 - Conflito com passageiro\n");
-    printf("7 - Atraso operacional\n");
-    printf("8 - Outro\n");
-    printf("Escolha: ");
-
-    int op_tipo;
-    scanf("%d", &op_tipo);
-
-    switch(op_tipo)
-    {
-        case 1: strcpy(a->tipo, "Acidente de transito"); break;
-        case 2: strcpy(a->tipo, "Falha mecanica"); break;
-        case 3: strcpy(a->tipo, "Passageiro com mal estar"); break;
-        case 4: strcpy(a->tipo, "Vandalismo / depredacao"); break;
-        case 5: strcpy(a->tipo, "Problema na via"); break;
-        case 6: strcpy(a->tipo, "Conflito com passageiro"); break;
-        case 7: strcpy(a->tipo, "Atraso operacional"); break;
-        default: strcpy(a->tipo, "Outro"); break;
-    }
-
-    // --- GRAVIDADE ---
-    printf("\n=== GRAVIDADE ===\n");
-    printf("1 - Leve (sem feridos, sem bloqueio)\n");
-    printf("2 - Moderada (interferencia no transito)\n");
-    printf("3 - Grave (feridos ou via bloqueada)\n");
-    printf("4 - Critica (emergencia imediata)\n");
-    printf("Escolha: ");
-
-    int op_grav;
-    scanf("%d", &op_grav);
-
-    switch(op_grav)
-    {
-        case 1: strcpy(a->gravidade, "Leve"); break;
-        case 2: strcpy(a->gravidade, "Moderada"); break;
-        case 3: strcpy(a->gravidade, "Grave"); break;
-        case 4: strcpy(a->gravidade, "Critica"); break;
-        default: strcpy(a->gravidade, "Leve"); break;
-    }
-
-    // --- LOCAL ---
-    printf("\n=== LOCAL DO OCORRIDO ===\n");
-    printf("1 - Dentro do veiculo\n");
-    printf("2 - Na parada / estacao\n");
-    printf("3 - Na via publica\n");
-    printf("4 - No terminal\n");
-    printf("5 - Na garagem\n");
-    printf("6 - Outro ponto da rota\n");
-    printf("Escolha: ");
-
-    int op_local;
-    scanf("%d", &op_local);
-
-    switch(op_local)
-    {
-        case 1: strcpy(a->local, "Dentro do veiculo"); break;
-        case 2: strcpy(a->local, "Na parada / estacao"); break;
-        case 3: strcpy(a->local, "Na via publica"); break;
-        case 4: strcpy(a->local, "No terminal"); break;
-        case 5: strcpy(a->local, "Na garagem"); break;
-        default: strcpy(a->local, "Outro ponto da rota"); break;
-    }
-
-    // --- O QUE ACONTECEU ---
-    printf("\n=== O QUE ACONTECEU ===\n");
-    printf("1 - Colisao entre veiculos\n");
-    printf("2 - Atropelamento\n");
-    printf("3 - Pneu furado\n");
-    printf("4 - Motor superaquecido\n");
-    printf("5 - Porta com defeito\n");
-    printf("6 - Passageiro desmaiou\n");
-    printf("7 - Passageiro passou mal\n");
-    printf("8 - Briga entre passageiros\n");
-    printf("9 - Buraco / obstaculo na pista\n");
-    printf("10 - Semaforo ou sinal com defeito\n");
-    printf("11 - Alagamento na via\n");
-    printf("12 - Objeto danificado no veiculo\n");
-    printf("13 - Outro\n");
-    printf("Escolha: ");
-
-    int op_desc;
-    scanf("%d", &op_desc);
-
-    switch(op_desc)
-    {
-        case 1:  strcpy(a->descricao, "Colisao entre veiculos"); break;
-        case 2:  strcpy(a->descricao, "Atropelamento"); break;
-        case 3:  strcpy(a->descricao, "Pneu furado"); break;
-        case 4:  strcpy(a->descricao, "Motor superaquecido"); break;
-        case 5:  strcpy(a->descricao, "Porta com defeito"); break;
-        case 6:  strcpy(a->descricao, "Passageiro desmaiou"); break;
-        case 7:  strcpy(a->descricao, "Passageiro passou mal"); break;
-        case 8:  strcpy(a->descricao, "Briga entre passageiros"); break;
-        case 9:  strcpy(a->descricao, "Buraco / obstaculo na pista"); break;
-        case 10: strcpy(a->descricao, "Semaforo ou sinal com defeito"); break;
-        case 11: strcpy(a->descricao, "Alagamento na via"); break;
-        case 12: strcpy(a->descricao, "Objeto danificado no veiculo"); break;
-        default: strcpy(a->descricao, "Outro"); break;
-    }
-
-    // --- CONFIRMACAO ---
-    printf("\n%s\n", DIV);
-    printf("PROTOCOLO : %s\n", a->protocolo);
-    printf("TIPO      : %s\n", a->tipo);
-    printf("GRAVIDADE : %s\n", a->gravidade);
-    printf("LOCAL     : %s\n", a->local);
-    printf("OCORRIDO  : %s\n", a->descricao);
-    printf("DATA/HORA : %s\n", a->data_hora);
-    printf("%s\n", DIV);
-
-    printf("Confirmar envio? (s/n): ");
-    char confirmar;
-    scanf(" %c", &confirmar);
-
-    if(confirmar == 's' || confirmar == 'S')
-    {
-        FILE *f = fopen("avisos.txt", "a");
-        fprintf(f, "%s | %s | %s | %s | %s | %s | %s | %s\n",
-                motorista.nome,
-                motorista.linha,
-                a->protocolo,
-                a->data_hora,
-                a->tipo,
-                a->gravidade,
-                a->local,
-                a->descricao);
-        fclose(f);
-
-        motorista.total_avisos++;
-        printf("\nAviso enviado com sucesso!\n");
-    }
+    fclose(f);
+    if (tot == 0)
+        printf("  (arquivo vazio)\n");
     else
-    {
-        printf("\nAviso cancelado.\n");
-    }
+        printf("  Total: %d registro(s)\n", tot);
+}
+
+void relatorio()
+{
+    char dth[25];
+    dataHora(dth, sizeof(dth));
+
+    cabec("RELATORIO GERAL DO SISTEMA");
+    printf("  Gerado em: %s\n", dth);
+
+    exibirArq("dados_onibus.csv",     "ONIBUS CADASTRADOS");
+    exibirArq("dados_paradas.csv",    "PARADAS CADASTRADAS");
+    exibirArq("dados_motoristas.csv", "MOTORISTAS CADASTRADOS");
+    exibirArq("dados_linhas.csv",     "LINHAS CADASTRADAS");
+    exibirArq("avisos.csv",           "AVISOS REGISTRADOS");
+
+    printf("\n%s\n", DIV);
+    pausar();
+}
+
+void loginMotorista()
+{
+    cabec("LOGIN — MOTORISTA");
+    printf("  Ola! Identifique-se para iniciar sua jornada:\n\n");
+
+    printf("  Matricula : ");
+    scanf("%14s", ses.mat);
+
+    printf("  Seu nome  : ");
+    scanf(" %49[^\n]", ses.nom);
+    trim(ses.nom);
+
+    printf("  Linha     : ");
+    scanf("%19s", ses.lin);
+
+    printf("  Veiculo   : ");
+    scanf("%19s", ses.vei);
+
+    dataHora(ses.ini, sizeof(ses.ini));
+    ses.tot   = 0;
+    ses.ativo = 1;
+
+    printf("\n%s\n", DIV);
+    printf("  SESSAO INICIADA COM SUCESSO\n");
+    printf("%s\n", DIV);
+    printf("  Motorista : %s\n", ses.nom);
+    printf("  Matricula : %s\n", ses.mat);
+    printf("  Linha     : %s\n", ses.lin);
+    printf("  Veiculo   : %s\n", ses.vei);
+    printf("  Inicio    : %s\n", ses.ini);
+    printf("%s\n", DIV);
+    printf("  Bom turno, %s! Dirija com seguranca.\n", ses.nom);
 
     pausar();
 }
 
-// ======================================================
-//                    MENU ADMIN
-// ======================================================
+void enviarAviso()
+{
+    if (ses.tot >= MAX) {
+        erro("Limite de avisos da sessao atingido. Encerre e inicie nova jornada.");
+        pausar();
+        return;
+    }
 
-void menu_admin()
+    Aviso *a = &ses.av[ses.tot];
+
+    cabec("ENVIAR AVISO AO CONTROLE");
+    printf("  Use este formulario para reportar problemas durante o percurso.\n\n");
+
+    dataHora(a->dth, sizeof(a->dth));
+    srand((unsigned int)time(NULL));
+    sprintf(a->prot, "AV-%s-%04d", ses.mat, rand() % 9999);
+
+    printf("  Tipo do problema\n");
+    printf("  (ex: Mecanico, Passageiro, Via, Atraso, Outro)\n");
+    printf("  > ");
+    scanf(" %49[^\n]", a->tip);
+    trim(a->tip);
+    if (vazio(a->tip, "Tipo do problema")) { pausar(); return; }
+
+    printf("\n  Gravidade\n");
+    printf("  (Baixa / Media / Alta / Urgente)\n");
+    printf("  > ");
+    scanf(" %19[^\n]", a->grav);
+
+    printf("\n  Local exato onde ocorreu:\n");
+    printf("  > ");
+    scanf(" %99[^\n]", a->loc);
+    trim(a->loc);
+
+    printf("\n  Descreva o que aconteceu (seja o mais claro possivel):\n");
+    printf("  > ");
+    scanf(" %199[^\n]", a->desc);
+    trim(a->desc);
+
+    printf("\n  %s\n", DIV);
+    printf("  RESUMO DO AVISO\n");
+    printf("  Protocolo : %s\n", a->prot);
+    printf("  Data/Hora : %s\n", a->dth);
+    printf("  Motorista : %s (linha %s)\n", ses.nom, ses.lin);
+    printf("  Tipo      : %s\n", a->tip);
+    printf("  Gravidade : %s\n", a->grav);
+    printf("  Local     : %s\n", a->loc);
+    printf("  Descricao : %s\n", a->desc);
+    printf("  %s\n", DIV);
+
+    if (!confirmar("Confirmar o envio deste aviso?")) {
+        aviso("Aviso nao enviado. Voce pode preencher novamente.");
+        pausar();
+        return;
+    }
+
+    FILE *f = fopen("avisos.csv", "a");
+    if (!f) {
+        erro("Nao foi possivel registrar o aviso. Tente novamente.");
+        pausar();
+        return;
+    }
+    fprintf(f, "%s;%s;%s;%s;%s;%s;%s;%s\n",
+            a->prot, a->dth, ses.nom, ses.lin,
+            a->tip, a->grav, a->loc, a->desc);
+    fclose(f);
+
+    ses.tot++;
+    printf("\n  Aviso registrado com protocolo: %s\n", a->prot);
+    ok("Aviso enviado ao controle central com sucesso!");
+    pausar();
+}
+
+void historico()
+{
+    cabec("HISTORICO DA JORNADA");
+
+    printf("  Motorista : %s\n", ses.nom);
+    printf("  Inicio    : %s\n", ses.ini);
+    printf("  Avisos    : %d registrado(s)\n\n", ses.tot);
+
+    if (ses.tot == 0) {
+        printf("  Nenhum aviso foi enviado nesta jornada.\n");
+    } else {
+        for (int i = 0; i < ses.tot; i++) {
+            printf("  %s\n", DIV);
+            printf("  Aviso #%d\n", i + 1);
+            printf("  Protocolo : %s\n", ses.av[i].prot);
+            printf("  Horario   : %s\n", ses.av[i].dth);
+            printf("  Tipo      : %s | Gravidade: %s\n", ses.av[i].tip, ses.av[i].grav);
+            printf("  Local     : %s\n", ses.av[i].loc);
+        }
+        printf("  %s\n", DIV);
+    }
+    pausar();
+}
+
+void encerrar()
+{
+    char fim[25];
+    dataHora(fim, sizeof(fim));
+
+    cabec("ENCERRAR JORNADA");
+    printf("  Resumo da sua jornada:\n\n");
+    printf("  Motorista : %s\n", ses.nom);
+    printf("  Linha     : %s\n", ses.lin);
+    printf("  Veiculo   : %s\n", ses.vei);
+    printf("  Inicio    : %s\n", ses.ini);
+    printf("  Termino   : %s\n", fim);
+    printf("  Avisos    : %d enviado(s)\n", ses.tot);
+
+    if (ses.tot > 0)
+        aviso("Voce enviou avisos nesta jornada. O controle ja foi notificado.");
+
+    printf("\n  Bom descanso, %s! Ate o proximo turno.\n", ses.nom);
+    ses.ativo = 0;
+    pausar();
+}
+
+void menuAdmin()
 {
     int op;
 
-    do
-    {
-        cabecalho("MENU ADMINISTRADOR");
+    do {
+        cabec("PAINEL DO ADMINISTRADOR");
+        printf("  O que voce deseja fazer?\n\n");
+        printf("  1. Cadastrar novo onibus\n");
+        printf("  2. Cadastrar nova parada\n");
+        printf("  3. Cadastrar novo motorista\n");
+        printf("  4. Cadastrar nova linha\n");
+        printf("  5. Ver relatorio geral\n");
+        printf("  0. Sair do painel\n\n");
+        printf("  Sua escolha: ");
 
-        printf("1 - Cadastrar Onibus\n");
-        printf("2 - Cadastrar Parada\n");
-        printf("3 - Cadastrar Motorista\n");
-        printf("4 - Cadastrar Linha\n");
-        printf("5 - Relatorio Geral\n");
-        printf("0 - Voltar\n\n");
-        printf("Escolha: ");
-        scanf("%d", &op);
-
-        switch(op)
-        {
-            case 1: cadastrar_onibus(); break;
-            case 2: cadastrar_parada(); break;
-            case 3: cadastrar_motorista(); break;
-            case 4: cadastrar_linhas(); break;
-            case 5: relatorio_geral(); break;
+        if (scanf("%d", &op) != 1) {
+            while (getchar() != '\n');
+            op = -1;
         }
 
-    } while(op != 0);
+        switch (op) {
+            case 1: cadOnibus();    break;
+            case 2: cadParada();    break;
+            case 3: cadMotorista(); break;
+            case 4: cadLinha();     break;
+            case 5: relatorio();    break;
+            case 0: printf("\n  Saindo do painel administrativo...\n"); break;
+            default:
+                erro("Opcao invalida. Escolha um numero entre 0 e 5.");
+                pausar();
+        }
+    } while (op != 0);
 }
 
-// ======================================================
-//                    MENU MOTORISTA
-// ======================================================
-
-void menu_motorista()
+void menuMotorista()
 {
     int op;
 
-    do
-    {
-        cabecalho("MENU DO MOTORISTA");
+    do {
+        cabec("PAINEL DO MOTORISTA");
+        printf("  Ola, %s!\n", ses.nom);
+        printf("  Linha: %-10s | Veiculo: %-10s | Avisos: %d\n\n",
+               ses.lin, ses.vei, ses.tot);
+        printf("  %s\n\n", DIV);
+        printf("  1. Enviar aviso ao controle\n");
+        printf("  2. Ver historico da jornada\n");
+        printf("  0. Encerrar jornada\n\n");
+        printf("  Sua escolha: ");
 
-        printf("Motorista: %s\n", motorista.nome);
-        printf("Linha: %s\n", motorista.linha);
-        printf("Veiculo: %s\n", motorista.veiculo);
-        printf("Inicio: %s\n", motorista.inicio_jornada);
-
-        printf("\n1 - Enviar Aviso\n");
-        printf("0 - Encerrar Jornada\n\n");
-        printf("Escolha: ");
-        scanf("%d", &op);
-
-        switch(op)
-        {
-            case 1: enviar_aviso(); break;
+        if (scanf("%d", &op) != 1) {
+            while (getchar() != '\n');
+            op = -1;
         }
 
-    } while(op != 0);
+        switch (op) {
+            case 1: enviarAviso(); break;
+            case 2: historico();   break;
+            case 0: encerrar();    break;
+            default:
+                erro("Opcao invalida. Escolha 0, 1 ou 2.");
+                pausar();
+        }
+    } while (op != 0);
 }
-
-// ======================================================
-//                    TELA INICIAL
-// ======================================================
 
 int main()
 {
     setlocale(LC_ALL, "");
-    int opcao;
+    int op;
 
-    do
-    {
-        cabecalho("TELA INICIAL");
+    do {
+        cabec("BEM-VINDO AO SISTEMA BRT");
+        printf("  Escolha o tipo de acesso:\n\n");
+        printf("  1. Entrar como Administrador\n");
+        printf("  2. Entrar como Motorista\n");
+        printf("  0. Sair do sistema\n\n");
+        printf("  Sua escolha: ");
 
-        printf("1 - Login Admin\n");
-        printf("2 - Login Motorista\n");
-        printf("0 - Sair\n\n");
-        printf("Escolha: ");
-        scanf("%d", &opcao);
-
-        switch(opcao)
-        {
-            case 1:
-                if(login_admin())
-                    menu_admin();
-                break;
-
-            case 2:
-                login_motorista();
-                menu_motorista();
-                break;
+        if (scanf("%d", &op) != 1) {
+            while (getchar() != '\n');
+            op = -1;
         }
 
-    } while(opcao != 0);
+        switch (op) {
+            case 1:
+                if (loginAdmin())
+                    menuAdmin();
+                break;
+            case 2:
+                loginMotorista();
+                menuMotorista();
+                break;
+            case 0:
+                printf("\n  Sistema encerrado. Ate logo!\n\n");
+                break;
+            default:
+                erro("Opcao invalida. Digite 0, 1 ou 2.");
+                pausar();
+        }
+    } while (op != 0);
 
     return 0;
 }
