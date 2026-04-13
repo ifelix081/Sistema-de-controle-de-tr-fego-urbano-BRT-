@@ -298,7 +298,7 @@ int loginAdmin()
     printf("  Usuario : "); scanf("%19s", usr);
     printf("  Senha   : "); scanf("%19s", sen);
 
-    if (strcmp(usr, "admin") == 0 && strcmp(sen, "4321") == 0) {
+    if (strcmp(usr, "admin") == 0 && strcmp(sen, "1234") == 0) {
         ok("Acesso liberado! Bem-vindo ao painel administrativo.");
         pausar();
         return 1;
@@ -1034,8 +1034,12 @@ int main()
                 break;
             }
             case 0:
-                printf("\n  Sistema encerrado. Ate logo!\n\n");
-                break;
+                printf("\n  Salvando dados no banco...\n");
+
+                system("python src/output/db_import.py");
+
+                printf("  Sistema encerrado. Ate logo!\n\n");
+    break;
             default:
                 erro("Opcao invalida. Digite 0, 1, 2 ou 3.");
                 pausar();
