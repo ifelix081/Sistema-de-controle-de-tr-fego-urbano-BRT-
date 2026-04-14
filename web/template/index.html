@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema BRT - Terminal</title>
+
+  <style>
+    body {
+      background: #0d0d0d;
+      color: #00ff88;
+      font-family: monospace;
+      padding: 20px;
+    }
+
+    button {
+      background: #00ff88;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #output {
+      margin-top: 20px;
+      background: black;
+      padding: 15px;
+      height: 400px;
+      overflow-y: auto;
+      border: 1px solid #00ff88;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>🚍 Sistema BRT Integrado</h2>
+
+<button onclick="run()">Executar main.c</button>
+
+<div id="output">Aguardando execução...</div>
+
+<script>
+function run() {
+    document.getElementById("output").innerHTML = "Executando sistema...\n";
+
+    fetch("/run")
+      .then(res => res.text())
+      .then(data => {
+          document.getElementById("output").innerHTML = data;
+      });
+}
+</script>
+
+</body>
+</html>
