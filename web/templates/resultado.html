@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado da Busca</title>
+    </head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='resultado.css') }}">
+<body>
+
+    <h1>Resultados para a linha: {{ linha }}</h1>
+
+    {% if resultados %}
+        
+        <ul>
+            {% for onibus in resultados %}
+                
+                <li>
+                    <strong>ID do Ônibus:</strong> {{ onibus['numero'] }} | 
+                    <strong>Placa:</strong> {{ onibus['placa'] }}
+                </li>
+
+            {% endfor %}
+        </ul>
+
+    {% else %}
+        <p>Nenhum ônibus foi encontrado para esta linha.</p>
+    {% endif %}
+
+    <br>
+    <a href="/">Voltar para a busca</a>
+
+</body>
+</html>
