@@ -1,56 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Sistema BRT - Terminal</title>
-
-  <style>
-    body {
-      background: #0d0d0d;
-      color: #00ff88;
-      font-family: monospace;
-      padding: 20px;
-    }
-
-    button {
-      background: #00ff88;
-      border: none;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    #output {
-      margin-top: 20px;
-      background: black;
-      padding: 15px;
-      height: 400px;
-      overflow-y: auto;
-      border: 1px solid #00ff88;
-      white-space: pre-wrap;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema BRT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-<h2>🚍 Sistema BRT Integrado</h2>
+    <header id="main-nav-bar">
+        <nav>
+            <img src="{{ url_for('static', filename='logo-onibus.svg') }}" alt="Logo ônibus" class="logo_onibus">
+        </nav>
+    </header>
 
-<button onclick="run()">Executar main.c</button>
+    <section class="apresentacao">
+        <div>
+            <h1>Sistema de Controle de Tráfego BRT</h1>
+            <p>Consulte rotas e estações do sistema.</p>
+        </div>
+    </section>
 
-<div id="output">Aguardando execução...</div>
+    <section class="row">
 
-<script>
-function run() {
-    document.getElementById("output").innerHTML = "Executando sistema...\n";
+        <div class="card-relatorios">
+            <h2>Rotas</h2>
+            <p>Encontre a rota do seu ônibus</p>
 
-    fetch("/run")
-      .then(res => res.text())
-      .then(data => {
-          document.getElementById("output").innerHTML = data;
-      });
-}
-</script>
+            <form action="/consultar_onibus" method="get">
+                <label>Número da linha:</label>
+                <input
+                    type="number"
+                    name="linha"
+                    placeholder="Ex: 123"
+                    class="input-linha"
+                >
+                <button type="submit">Buscar</button>
+            </form>
+        </div>
+
+        <div class="card-relatorios">
+            <h2>Estações</h2>
+            <p>Consultar estação</p>
+
+            <form action="/buscar_estacao" method="get">
+                <label>ID:</label>
+                <input
+                    type="number"
+                    name="id_estacao"
+                    placeholder="Ex: 1"
+                    class="input-linha"
+                >
+                <button type="submit">Buscar</button>
+            </form>
+        </div>
+
+    </section>
 
 </body>
 </html>
