@@ -1,0 +1,170 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Manrope', sans-serif;
+    background-color: #f7f5f1;
+    color: #1a1a1a;
+    min-height: 100vh;
+}
+
+main {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.mensagem-erro {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: #991b1b;
+    margin: 0 24px 24px;
+}
+
+/* Header / Nav */
+
+#main-nav-bar {
+    background-color: #ddab23;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo_onibus {
+    width: 110px;
+    height: auto;
+}
+
+/* Apresentação */
+
+.apresentacao {
+    text-align: center;
+    padding: 48px 20px 28px;
+}
+
+.apresentacao h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+}
+
+.apresentacao p {
+    font-size: 0.95rem;
+    color: #666;
+    font-weight: 400;
+}
+
+/* Grid De Cards */
+
+.row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 8px 24px 48px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Card  */
+
+.card-relatorios {
+    background-color: #fff;
+    border-radius: 14px;
+    border: 1px solid #ebe8e2;
+    padding: 26px 24px;
+    width: 300px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-relatorios:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.card-relatorios h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+}
+
+.card-relatorios p {
+    font-size: 0.875rem;
+    color: #888;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* Formulário  */
+
+label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.input-linha {
+    width: 100%;
+    padding: 10px 13px;
+    margin-bottom: 14px;
+    border: 1.5px solid #e0dcd5;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: #1a1a1a;
+    background-color: #fafaf9;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.input-linha::placeholder {
+    color: #bbb;
+}
+
+.input-linha:focus {
+    border-color: #ddab23;
+    background-color: #fff;
+}
+
+/* Botão */
+
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background-color: #ddab23;
+    color: #fff;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+button:hover {
+    background-color: #c99a1a;
+}
+
+button:active {
+    transform: scale(0.98);
+}

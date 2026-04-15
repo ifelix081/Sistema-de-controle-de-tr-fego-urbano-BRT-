@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Manrope', sans-serif;
+    background-color: #f7f5f1;
+    color: #1a1a1a;
+}
+
+/* Header  */
+
+.resultado-header {
+    background-color: #ddab23;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.header-back {
+    background: rgba(0, 0, 0, 0.12);
+    border: none;
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.header-back:hover {
+    background: rgba(0, 0, 0, 0.20);
+}
+
+.header-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+/* Título Da Busca  */
+
+h1 {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 36px auto 6px;
+    max-width: 600px;
+    padding: 0 20px;
+    letter-spacing: -0.01em;
+}
+
+.resultado-subtitulo {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #999;
+    margin-bottom: 24px;
+}
+
+/* Lista De Resultados */
+
+ul {
+    list-style: none;
+    max-width: 580px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+li {
+    background-color: #fff;
+    border: 1px solid #ebe8e2;
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.item-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.item-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #aaa;
+}
+
+.item-valor {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.item-badge {
+    background-color: #fef3d0;
+    color: #8a6200;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Mensagem Sem Resultado  */
+
+.sem-resultado {
+    text-align: center;
+    color: #999;
+    font-size: 0.95rem;
+    margin: 52px auto;
+    max-width: 400px;
+    padding: 0 20px;
+    line-height: 1.6;
+}
+
+/* Link Voltar */
+
+.btn-voltar {
+    display: block;
+    width: fit-content;
+    margin: 28px auto 52px;
+    background-color: #ddab23;
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    letter-spacing: 0.02em;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-voltar:hover {
+    background-color: #c99a1a;
+}
+
+.btn-voltar:active {
+    transform: scale(0.98);
+}

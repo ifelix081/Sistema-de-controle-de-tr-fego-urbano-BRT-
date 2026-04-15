@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado da Estação — Sistema BRT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='resultado.css') }}">
+</head>
+<body>
+    <header class="resultado-header">
+        <a href="/" class="header-back">← Voltar</a>
+        <span class="header-title">Sistema BRT</span>
+    </header>
+
+    <main>
+        <h1>Consulta da estação {{ id_estacao }}</h1>
+
+        {% if parada %}
+            <section class="resultado-subtitulo">
+                <p>Dados da parada encontrada.</p>
+            </section>
+
+            <ul>
+                <li>
+                    <div class="item-campo">
+                        <span class="item-label">ID</span>
+                        <span class="item-valor">{{ parada['id'] }}</span>
+                    </div>
+                    <div class="item-campo">
+                        <span class="item-label">Código</span>
+                        <span class="item-valor">{{ parada['codigo'] }}</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="item-campo">
+                        <span class="item-label">Endereço</span>
+                        <span class="item-valor">{{ parada['endereco'] }}</span>
+                    </div>
+                </li>
+            </ul>
+        {% else %}
+            <p class="sem-resultado">
+                Nenhuma estação encontrada para o ID <strong>{{ id_estacao }}</strong>.<br>
+                Verifique o número e tente novamente.
+            </p>
+        {% endif %}
+
+        <a href="/" class="btn-voltar">← Voltar para a busca</a>
+    </main>
+</body>
+</html>

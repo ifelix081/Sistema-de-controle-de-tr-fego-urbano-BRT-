@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado da Busca — Sistema BRT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='resultado.css') }}">
+</head>
+<body>
+
+    <header class="resultado-header">
+        <a href="/" class="header-back">← Voltar</a>
+        <span class="header-title">Sistema BRT</span>
+    </header>
+
+    <main>
+        <h1>Resultados para a linha {{ linha }}</h1>
+
+        {% if resultados %}
+
+        <p class="resultado-subtitulo">
+            {{ resultados | length }} ônibus encontrado{{ 's' if resultados | length != 1 else '' }}
+        </p>
+
+        <ul>
+            {% for onibus in resultados %}
+                <li>
+
+                    <div class="item-campo">
+                        <span class="item-label">Ônibus</span>
+                        <span class="item-valor">#{{ onibus['numero'] }}</span>
+                    </div>
+
+                    <div class="item-campo">
+                        <span class="item-label">Placa</span>
+                        <span class="item-valor">{{ onibus['placa'] }}</span>
+                    </div>
+
+                    <span class="item-badge">Linha {{ linha }}</span>
+
+                </li>
+            {% endfor %}
+        </ul>
+
+    {% else %}
+
+        <p class="sem-resultado">
+            Nenhum ônibus encontrado para a linha <strong>{{ linha }}</strong>.<br>
+            Verifique o número e tente novamente.
+        </p>
+
+    {% endif %}
+
+    <a href="/" class="btn-voltar">← Voltar para a busca</a>
+    </main>
+
+</body>
+</html>
