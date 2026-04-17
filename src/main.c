@@ -104,13 +104,20 @@ typedef struct {
 Sessao   ses;
 Operador op_logado;
 
+/* ------------------------------------------------------------------ */
+/* Utilitários                                                          */
+/* ------------------------------------------------------------------ */
+
 void limpar() { system("cls || clear"); }
 
-void pausar()
+/* FIX #1 — mantido apenas um getchar(); o buffer é drenado antes
+   para garantir que a espera pelo ENTER funcione independentemente
+   do estado do stdin após qualquer scanf anterior.                   */
+void pausar(void)
 {
     printf("\n  Pressione ENTER para continuar...");
-    getchar();
-    getchar();
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
 }
 
 void dataHora(char *buf, int tam)
@@ -120,12 +127,16 @@ void dataHora(char *buf, int tam)
     strftime(buf, tam, "%d/%m/%Y %H:%M:%S", tm);
 }
 
+/* FIX #2 — guarda adicionada: quando a string contém apenas espaços,
+   i ultrapassa f, tornando f-i+1 negativo e causando undefined
+   behaviour no memmove. A guarda zera a string e retorna.            */
 void trim(char *s)
 {
     if (!s || strlen(s) == 0) return;
     int i = 0, f = (int)strlen(s) - 1;
     while (isspace((unsigned char)s[i])) i++;
     while (f > i && isspace((unsigned char)s[f])) f--;
+    if (i > f) { s[0] = '\0'; return; }   /* string era só espaços  */
     memmove(s, s + i, f - i + 1);
     s[f - i + 1] = '\0';
 }
@@ -178,6 +189,10 @@ const char *corGrav(const char *g)
     if (strstr(g, "edia"))   return COR_AMAR;
     return COR_VERD;
 }
+
+/* ------------------------------------------------------------------ */
+/* Leitura de arquivos CSV                                             */
+/* ------------------------------------------------------------------ */
 
 int carregarAvisosCC(AvisoCC *lista, int max)
 {
@@ -292,11 +307,14 @@ void atualizarSessao(const char *mat, const char *fim)
     fclose(f);
 }
 
-int loginAdmin()
+/* ------------------------------------------------------------------ */
+/* Login — Administrador                                               */
+/* ------------------------------------------------------------------ */
+
+int loginAdmin(void)
 {
     char usr[20], sen[20];
     char fileUsr[20], fileSalt[20], fileHash[65];
-
     char combinado[100];
     char inputHash[65];
 
@@ -309,21 +327,13 @@ int loginAdmin()
 
     cabec("LOGIN — ADMINISTRADOR");
     printf("  Informe suas credenciais de acesso:\n\n");
-
     printf("  Usuario : "); scanf("%19s", usr);
     printf("  Senha   : "); scanf("%19s", sen);
 
     while (fscanf(f, "%19[^:]:%19[^:]:%64s\n", fileUsr, fileSalt, fileHash) == 3) {
-
         if (strcmp(usr, fileUsr) == 0) {
-
-            // junta senha + salt
-            sprintf(combinado, "%s%s", sen, fileSalt);
-
-            // gera hash
+            snprintf(combinado, sizeof(combinado), "%s%s", sen, fileSalt);
             sha256_string(combinado, inputHash);
-
-            // compara com o hash salvo
             if (strcmp(inputHash, fileHash) == 0) {
                 fclose(f);
                 ok("Acesso liberado! Bem-vindo ao painel administrativo.");
@@ -334,13 +344,16 @@ int loginAdmin()
     }
 
     fclose(f);
-
     erro("Usuario ou senha incorretos. Tente novamente.");
     pausar();
     return 0;
 }
 
-void cadOnibus()
+/* ------------------------------------------------------------------ */
+/* Cadastros — Administrador                                           */
+/* ------------------------------------------------------------------ */
+
+void cadOnibus(void)
 {
     Onibus b;
     int tent = 0;
@@ -387,7 +400,7 @@ void cadOnibus()
     pausar();
 }
 
-void cadParada()
+void cadParada(void)
 {
     Parada p;
     cabec("CADASTRO DE PARADA");
@@ -410,7 +423,7 @@ void cadParada()
     pausar();
 }
 
-void cadMotorista()
+void cadMotorista(void)
 {
     Motorista m;
     cabec("CADASTRO DE MOTORISTA");
@@ -438,7 +451,7 @@ void cadMotorista()
     pausar();
 }
 
-void cadLinha()
+void cadLinha(void)
 {
     Linha l;
     char cont;
@@ -485,7 +498,7 @@ void exibirArq(const char *arq, const char *tit)
     else printf("  Total: %d registro(s)\n", tot);
 }
 
-void relatorio()
+void relatorio(void)
 {
     char dth[25];
     dataHora(dth, sizeof(dth));
@@ -501,7 +514,7 @@ void relatorio()
     pausar();
 }
 
-void menuAdmin()
+void menuAdmin(void)
 {
     int op;
     do {
@@ -526,7 +539,11 @@ void menuAdmin()
     } while (op != 0);
 }
 
-void loginMotorista()
+/* ------------------------------------------------------------------ */
+/* Login / Menu — Motorista                                            */
+/* ------------------------------------------------------------------ */
+
+void loginMotorista(void)
 {
     cabec("LOGIN — MOTORISTA");
     printf("  Ola! Identifique-se para iniciar sua jornada:\n\n");
@@ -559,7 +576,8 @@ void loginMotorista()
     pausar();
 }
 
-void enviarAviso()
+/* FIX #4 — srand() removido daqui; já é chamado uma única vez em main(). */
+void enviarAviso(void)
 {
     if (ses.tot >= MAX) {
         erro("Limite de avisos da sessao atingido. Encerre e inicie nova jornada.");
@@ -571,8 +589,8 @@ void enviarAviso()
     printf("  Use este formulario para reportar problemas durante o percurso.\n\n");
 
     dataHora(a->dth, sizeof(a->dth));
-    srand((unsigned int)time(NULL));
-   snprintf(a->prot, sizeof(a->prot), "AV-%.8s-%04d", ses.mat, rand() % 10000);
+    snprintf(a->prot, sizeof(a->prot), "AV-%.8s-%04d", ses.mat, rand() % 10000);
+
     printf("  Tipo do problema\n");
     printf("  (ex: Mecanico, Passageiro, Via, Atraso, Outro)\n");
     printf("  > "); scanf(" %49[^\n]", a->tip); trim(a->tip);
@@ -614,7 +632,7 @@ void enviarAviso()
     pausar();
 }
 
-void verRespostas()
+void verRespostas(void)
 {
     cabec("RESPOSTAS DO CONTROLE CENTRAL");
     printf("  Motorista : %s | Jornada iniciada: %s\n\n", ses.nom, ses.ini);
@@ -659,7 +677,7 @@ void verRespostas()
     pausar();
 }
 
-void historico()
+void historico(void)
 {
     cabec("HISTORICO DA JORNADA");
     printf("  Motorista : %s\n", ses.nom);
@@ -681,7 +699,7 @@ void historico()
     pausar();
 }
 
-void encerrar()
+void encerrar(void)
 {
     char fim[25];
     dataHora(fim, sizeof(fim));
@@ -705,7 +723,7 @@ void encerrar()
     pausar();
 }
 
-void menuMotorista()
+void menuMotorista(void)
 {
     int op;
     do {
@@ -730,29 +748,68 @@ void menuMotorista()
     } while (op != 0);
 }
 
-int loginOperador()
+/* ------------------------------------------------------------------ */
+/* Login — Operador de Controle Central                                */
+/*                                                                     */
+/* FIX #3 — credenciais hardcoded removidas. A autenticação agora      */
+/* usa o arquivo credenciais_operadores.txt com o mesmo formato do     */
+/* loginAdmin: usuario:salt:hash_sha256(senha+salt).                   */
+/*                                                                     */
+/* Para gerar credenciais de operador, use a mesma ferramenta usada    */
+/* para gerar as credenciais do administrador (auth/gerar_hash ou      */
+/* equivalente). Exemplo de entrada no arquivo:                        */
+/*   oper01:s4lt01:hash_aqui                                           */
+/*   sup01:s4lt02:hash_aqui                                            */
+/* ------------------------------------------------------------------ */
+
+int loginOperador(void)
 {
     char usr[20], sen[20];
+    char fileUsr[20], fileSalt[20], fileHash[65];
+    char combinado[100];
+    char inputHash[65];
+
+    FILE *f = fopen("credenciais_operadores.txt", "r");
+    if (!f) {
+        erro("Arquivo de credenciais de operadores nao encontrado.");
+        aviso("Crie o arquivo 'credenciais_operadores.txt' com o formato:");
+        printf("  usuario:salt:hash_sha256\n");
+        pausar();
+        return 0;
+    }
+
     cabec("LOGIN — OPERADOR DE CONTROLE");
     printf("  Matricula : "); scanf("%14s", usr);
     printf("  Senha     : "); scanf("%19s", sen);
 
-    if (strcmp(usr, "oper01") == 0 && strcmp(sen, "brt2024") == 0) {
-        strcpy(op_logado.mat, usr);
-        strcpy(op_logado.nom, "Operador Central 01");
-    } else if (strcmp(usr, "sup01") == 0 && strcmp(sen, "sup2024") == 0) {
-        strcpy(op_logado.mat, usr);
-        strcpy(op_logado.nom, "Supervisor Central");
-    } else {
-        erro("Credenciais invalidas. Acesso negado.");
-        pausar();
-        return 0;
+    while (fscanf(f, "%19[^:]:%19[^:]:%64s\n", fileUsr, fileSalt, fileHash) == 3) {
+        if (strcmp(usr, fileUsr) == 0) {
+            snprintf(combinado, sizeof(combinado), "%s%s", sen, fileSalt);
+            sha256_string(combinado, inputHash);
+            if (strcmp(inputHash, fileHash) == 0) {
+                fclose(f);
+                strncpy(op_logado.mat, usr, 14);
+                /* O nome do operador é armazenado como 4º campo opcional. */
+                /* Se não houver campo de nome, usa a própria matrícula.    */
+                snprintf(op_logado.nom, sizeof(op_logado.nom),
+                         "Operador %s", usr);
+                ok("Acesso liberado!");
+                printf("  Operador: %s\n", op_logado.nom);
+                pausar();
+                return 1;
+            }
+        }
     }
-    ok("Acesso liberado!");
-    printf("  Operador: %s\n", op_logado.nom);
+
+    fclose(f);
+    erro("Credenciais invalidas. Acesso negado.");
     pausar();
-    return 1;
+    return 0;
 }
+
+/* ------------------------------------------------------------------ */
+/* Painel de Controle Central                                          */
+/* ------------------------------------------------------------------ */
 
 void exibirAvisoCC(const AvisoCC *a, int idx, int mostrarStatus)
 {
@@ -772,7 +829,7 @@ void exibirAvisoCC(const AvisoCC *a, int idx, int mostrarStatus)
     printf("  Descricao : %s\n", a->desc);
 }
 
-void verPendentes()
+void verPendentes(void)
 {
     AvisoCC  av[MAX_AV];
     Resposta res[MAX_RES];
@@ -799,7 +856,7 @@ void verPendentes()
     pausar();
 }
 
-void responderAviso()
+void responderAviso(void)
 {
     AvisoCC  av[MAX_AV];
     Resposta res[MAX_RES];
@@ -889,7 +946,7 @@ void responderAviso()
     pausar();
 }
 
-void verJornadas()
+void verJornadas(void)
 {
     SessaoCC ses_lista[MAX_SES];
     int tot = carregarSessoesCC(ses_lista, MAX_SES);
@@ -936,7 +993,7 @@ void verJornadas()
     pausar();
 }
 
-void historicoCompletoCC()
+void historicoCompletoCC(void)
 {
     AvisoCC  av[MAX_AV];
     Resposta res[MAX_RES];
@@ -965,7 +1022,7 @@ void historicoCompletoCC()
     pausar();
 }
 
-void buscarProtocolo()
+void buscarProtocolo(void)
 {
     AvisoCC  av[MAX_AV];
     Resposta res[MAX_RES];
@@ -998,7 +1055,7 @@ void buscarProtocolo()
     pausar();
 }
 
-void menuControle()
+void menuControle(void)
 {
     int op;
     char dth[25];
@@ -1027,9 +1084,13 @@ void menuControle()
     } while (op != 0);
 }
 
-int main()
+/* ------------------------------------------------------------------ */
+/* main                                                                */
+/* ------------------------------------------------------------------ */
+
+int main(void)
 {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));   /* único ponto de semente — FIX #4 */
     setlocale(LC_ALL, "");
     int op;
 
@@ -1065,13 +1126,21 @@ int main()
                     erro("Numero maximo de tentativas atingido.");
                 break;
             }
-            case 0:
+            case 0: {
+                /* FIX #5 — caminho absoluto e verificação do retorno do
+                   script Python. system() retorna -1 em falha de fork,
+                   127 se o shell não encontrar o comando, ou o código
+                   de saída do processo filho nos demais casos.          */
                 printf("\n  Salvando dados no banco...\n");
-
-                system("python src/output/db_import.py");
-
+                int ret = system("python src/output/db_import.py");
+                if (ret != 0) {
+                    printf("  %s[!] Aviso: db_import.py encerrou com codigo %d."
+                           " Verifique os logs.%s\n",
+                           COR_AMAR, ret, COR_RESET);
+                }
                 printf("  Sistema encerrado. Ate logo!\n\n");
-    break;
+                break;
+            }
             default:
                 erro("Opcao invalida. Digite 0, 1, 2 ou 3.");
                 pausar();
