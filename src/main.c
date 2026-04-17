@@ -1,26 +1,9 @@
-/*
- * Sistema BRT Integrado — main.c
- *
- * Correções aplicadas (issues #1–#5):
- *
- * #1 pausar(): duplo getchar() → mantido apenas um getchar().
- * #2 trim(): guarda adicionada para strings com só espaços
- *    (i > f → s[0]='\0'; return;) antes do memmove.
- * #3 loginOperador(): credenciais hardcoded removidas; autenticação
- *    migrada para arquivo credenciais_operadores.txt com hash SHA-256
- *    (mesmo padrão do loginAdmin).
- * #4 srand() removido de enviarAviso(); já é chamado em main().
- * #5 system("python ...") agora captura e verifica o valor de retorno.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
-#include <openssl/sha.h>
-#include "auth/auth.c"
 
 #define SEP      "===================================================="
 #define DIV      "----------------------------------------------------"
@@ -119,15 +102,8 @@ typedef struct {
 Sessao   ses;
 Operador op_logado;
 
-/* ------------------------------------------------------------------ */
-/* Utilitários                                                          */
-/* ------------------------------------------------------------------ */
-
 void limpar() { system("cls || clear"); }
 
-/* FIX #1 — mantido apenas um getchar(); o buffer é drenado antes
-   para garantir que a espera pelo ENTER funcione independentemente
-   do estado do stdin após qualquer scanf anterior.                   */
 void pausar(void)
 {
     printf("\n  Pressione ENTER para continuar...");
@@ -142,9 +118,6 @@ void dataHora(char *buf, int tam)
     strftime(buf, tam, "%d/%m/%Y %H:%M:%S", tm);
 }
 
-/* FIX #2 — guarda adicionada: quando a string contém apenas espaços,
-   i ultrapassa f, tornando f-i+1 negativo e causando undefined
-   behaviour no memmove. A guarda zera a string e retorna.            */
 void trim(char *s)
 {
     if (!s || strlen(s) == 0) return;
@@ -205,14 +178,10 @@ const char *corGrav(const char *g)
     return COR_VERD;
 }
 
-/* ------------------------------------------------------------------ */
-/* Leitura de arquivos CSV                                             */
-/* ------------------------------------------------------------------ */
-
 int carregarAvisosCC(AvisoCC *lista, int max)
 {
     FILE *f = fopen("avisos.csv", "r");
-    if (!f) return 0;
+    if (!f) return 0; 
     char linha[600];
     int tot = 0;
     while (fgets(linha, sizeof(linha), f) && tot < max) {
@@ -322,10 +291,6 @@ void atualizarSessao(const char *mat, const char *fim)
     fclose(f);
 }
 
-/* ------------------------------------------------------------------ */
-/* Login — Administrador                                               */
-/* ------------------------------------------------------------------ */
-
 int loginAdmin() 
 { 
         char usr[20], sen[20];
@@ -336,7 +301,7 @@ int loginAdmin()
         printf(" Senha : ");
         scanf("%19s", sen);
               
-        if (strcmp(usr, "admin") == 0 && strcm(sen, "1234") == 0) 
+        if (strcmp(usr, "admin") == 0 && strcmp(sen, "1234") == 0) 
         {
             ok("Acesso liberado! Bem-vindo ao painel administrativo.");
             pausar();
@@ -346,10 +311,6 @@ int loginAdmin()
     pausar();
     return 0; 
 }
-
-/* ------------------------------------------------------------------ */
-/* Cadastros — Administrador                                           */
-/* ------------------------------------------------------------------ */
 
 void cadOnibus(void)
 {
@@ -537,10 +498,6 @@ void menuAdmin(void)
     } while (op != 0);
 }
 
-/* ------------------------------------------------------------------ */
-/* Login / Menu — Motorista                                            */
-/* ------------------------------------------------------------------ */
-
 void loginMotorista(void)
 {
     cabec("LOGIN — MOTORISTA");
@@ -574,7 +531,6 @@ void loginMotorista(void)
     pausar();
 }
 
-/* FIX #4 — srand() removido daqui; já é chamado uma única vez em main(). */
 void enviarAviso(void)
 {
     if (ses.tot >= MAX) {
@@ -746,32 +702,18 @@ void menuMotorista(void)
     } while (op != 0);
 }
 
-/* ------------------------------------------------------------------ */
-/* Login — Operador de Controle Central                                */
-/*                                                                     */
-/* FIX #3 — credenciais hardcoded removidas. A autenticação agora      */
-/* usa o arquivo credenciais_operadores.txt com o mesmo formato do     */
-/* loginAdmin: usuario:salt:hash_sha256(senha+salt).                   */
-/*                                                                     */
-/* Para gerar credenciais de operador, use a mesma ferramenta usada    */
-/* para gerar as credenciais do administrador (auth/gerar_hash ou      */
-/* equivalente). Exemplo de entrada no arquivo:                        */
-/*   oper01:s4lt01:hash_aqui                                           */
-/*   sup01:s4lt02:hash_aqui                                            */
-/* ------------------------------------------------------------------ */
-
 int loginOperador(void)
 {
     char usr[20], sen[20];
-    char fileUsr[20], fileSalt[20], fileHash[65];
-    char combinado[100];
-    char inputHash[65];
+    char fileUsr[20], fileSen[20];
+    char linha[200];
+    int  autenticado = 0;
 
     FILE *f = fopen("credenciais_operadores.txt", "r");
     if (!f) {
         erro("Arquivo de credenciais de operadores nao encontrado.");
         aviso("Crie o arquivo 'credenciais_operadores.txt' com o formato:");
-        printf("  usuario:salt:hash_sha256\n");
+        printf("  usuario:senha\n");
         pausar();
         return 0;
     }
@@ -780,34 +722,30 @@ int loginOperador(void)
     printf("  Matricula : "); scanf("%14s", usr);
     printf("  Senha     : "); scanf("%19s", sen);
 
-    while (fscanf(f, "%19[^:]:%19[^:]:%64s\n", fileUsr, fileSalt, fileHash) == 3) {
+    while (fgets(linha, sizeof(linha), f)) {
+        if (sscanf(linha, "%19[^:]:%19s", fileUsr, fileSen) != 2) continue;
+
         if (strcmp(usr, fileUsr) == 0) {
-            snprintf(combinado, sizeof(combinado), "%s%s", sen, fileSalt);
-            sha256_string(combinado, inputHash);
-            if (strcmp(inputHash, fileHash) == 0) {
-                fclose(f);
-                strncpy(op_logado.mat, usr, 14);
-                /* O nome do operador é armazenado como 4º campo opcional. */
-                /* Se não houver campo de nome, usa a própria matrícula.    */
-                snprintf(op_logado.nom, sizeof(op_logado.nom),
-                         "Operador %s", usr);
-                ok("Acesso liberado!");
-                printf("  Operador: %s\n", op_logado.nom);
-                pausar();
-                return 1;
-            }
+            if (strcmp(sen, fileSen) == 0)
+                autenticado = 1;
+            break;
         }
     }
-
     fclose(f);
+
+    if (autenticado) {
+        strncpy(op_logado.mat, usr, 14);
+        snprintf(op_logado.nom, sizeof(op_logado.nom), "Operador %s", usr);
+        ok("Acesso liberado!");
+        printf("  Operador: %s\n", op_logado.nom);
+        pausar();
+        return 1;
+    }
+
     erro("Credenciais invalidas. Acesso negado.");
     pausar();
     return 0;
 }
-
-/* ------------------------------------------------------------------ */
-/* Painel de Controle Central                                          */
-/* ------------------------------------------------------------------ */
 
 void exibirAvisoCC(const AvisoCC *a, int idx, int mostrarStatus)
 {
@@ -1082,10 +1020,6 @@ void menuControle(void)
     } while (op != 0);
 }
 
-/* ------------------------------------------------------------------ */
-/* main                                                                */
-/* ------------------------------------------------------------------ */
-
 int main(void)
 {
     srand((unsigned int)time(NULL));   /* único ponto de semente — FIX #4 */
@@ -1125,10 +1059,6 @@ int main(void)
                 break;
             }
             case 0: {
-                /* FIX #5 — caminho absoluto e verificação do retorno do
-                   script Python. system() retorna -1 em falha de fork,
-                   127 se o shell não encontrar o comando, ou o código
-                   de saída do processo filho nos demais casos.          */
                 printf("\n  Salvando dados no banco...\n");
                 int ret = system("python src/output/db_import.py");
                 if (ret != 0) {
