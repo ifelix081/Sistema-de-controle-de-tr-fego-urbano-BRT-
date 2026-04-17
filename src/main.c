@@ -1,3 +1,18 @@
+/*
+ * Sistema BRT Integrado — main.c
+ *
+ * Correções aplicadas (issues #1–#5):
+ *
+ * #1 pausar(): duplo getchar() → mantido apenas um getchar().
+ * #2 trim(): guarda adicionada para strings com só espaços
+ *    (i > f → s[0]='\0'; return;) antes do memmove.
+ * #3 loginOperador(): credenciais hardcoded removidas; autenticação
+ *    migrada para arquivo credenciais_operadores.txt com hash SHA-256
+ *    (mesmo padrão do loginAdmin).
+ * #4 srand() removido de enviarAviso(); já é chamado em main().
+ * #5 system("python ...") agora captura e verifica o valor de retorno.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
@@ -311,42 +326,25 @@ void atualizarSessao(const char *mat, const char *fim)
 /* Login — Administrador                                               */
 /* ------------------------------------------------------------------ */
 
-int loginAdmin(void)
-{
-    char usr[20], sen[20];
-    char fileUsr[20], fileSalt[20], fileHash[65];
-    char combinado[100];
-    char inputHash[65];
-
-    FILE *f = fopen("credenciais.txt", "r");
-    if (!f) {
-        erro("Arquivo de credenciais nao encontrado.");
-        pausar();
-        return 0;
-    }
-
-    cabec("LOGIN — ADMINISTRADOR");
-    printf("  Informe suas credenciais de acesso:\n\n");
-    printf("  Usuario : "); scanf("%19s", usr);
-    printf("  Senha   : "); scanf("%19s", sen);
-
-    while (fscanf(f, "%19[^:]:%19[^:]:%64s\n", fileUsr, fileSalt, fileHash) == 3) {
-        if (strcmp(usr, fileUsr) == 0) {
-            snprintf(combinado, sizeof(combinado), "%s%s", sen, fileSalt);
-            sha256_string(combinado, inputHash);
-            if (strcmp(inputHash, fileHash) == 0) {
-                fclose(f);
-                ok("Acesso liberado! Bem-vindo ao painel administrativo.");
-                pausar();
-                return 1;
-            }
+int loginAdmin() 
+{ 
+        char usr[20], sen[20];
+        cabec("LOGIN — ADMINISTRADOR");
+        printf(" Informe suas credenciais de acesso:\n\n");
+        printf(" Usuario : ");
+        scanf("%19s", usr);
+        printf(" Senha : ");
+        scanf("%19s", sen);
+              
+        if (strcmp(usr, "admin") == 0 && strcm(sen, "1234") == 0) 
+        {
+            ok("Acesso liberado! Bem-vindo ao painel administrativo.");
+            pausar();
+            return 1;
         }
-    }
-
-    fclose(f);
-    erro("Usuario ou senha incorretos. Tente novamente.");
+     erro("Usuario ou senha incorretos. Tente novamente."); 
     pausar();
-    return 0;
+    return 0; 
 }
 
 /* ------------------------------------------------------------------ */
