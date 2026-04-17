@@ -4,6 +4,8 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include <openssl/sha.h>
+#include "auth/auth.c"
 
 #define SEP      "===================================================="
 #define DIV      "----------------------------------------------------"
@@ -293,16 +295,46 @@ void atualizarSessao(const char *mat, const char *fim)
 int loginAdmin()
 {
     char usr[20], sen[20];
+    char fileUsr[20], fileSalt[20], fileHash[65];
+
+    char combinado[100];
+    char inputHash[65];
+
+    FILE *f = fopen("credenciais.txt", "r");
+    if (!f) {
+        erro("Arquivo de credenciais nao encontrado.");
+        pausar();
+        return 0;
+    }
+
     cabec("LOGIN — ADMINISTRADOR");
     printf("  Informe suas credenciais de acesso:\n\n");
+
     printf("  Usuario : "); scanf("%19s", usr);
     printf("  Senha   : "); scanf("%19s", sen);
 
-    if (strcmp(usr, "admin") == 0 && strcmp(sen, "1234") == 0) {
-        ok("Acesso liberado! Bem-vindo ao painel administrativo.");
-        pausar();
-        return 1;
+    while (fscanf(f, "%19[^:]:%19[^:]:%64s\n", fileUsr, fileSalt, fileHash) == 3) {
+
+        if (strcmp(usr, fileUsr) == 0) {
+
+            // junta senha + salt
+            sprintf(combinado, "%s%s", sen, fileSalt);
+
+            // gera hash
+            sha256_string(combinado, inputHash);
+
+            // compara com o hash salvo
+            if (strcmp(inputHash, fileHash) == 0) {
+                fclose(f);
+                ok("Acesso liberado! Bem-vindo ao painel administrativo.");
+                pausar();
+                return 1;
+            }
+        }
     }
+
+    fclose(f);
+
     erro("Usuario ou senha incorretos. Tente novamente.");
     pausar();
     return 0;
@@ -540,8 +572,7 @@ void enviarAviso()
 
     dataHora(a->dth, sizeof(a->dth));
     srand((unsigned int)time(NULL));
-    sprintf(a->prot, "AV-%s-%04d", ses.mat, rand() % 9999);
-
+   snprintf(a->prot, sizeof(a->prot), "AV-%.8s-%04d", ses.mat, rand() % 10000);
     printf("  Tipo do problema\n");
     printf("  (ex: Mecanico, Passageiro, Via, Atraso, Outro)\n");
     printf("  > "); scanf(" %49[^\n]", a->tip); trim(a->tip);
@@ -998,6 +1029,7 @@ void menuControle()
 
 int main()
 {
+    srand(time(NULL));
     setlocale(LC_ALL, "");
     int op;
 
