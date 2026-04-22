@@ -11,6 +11,7 @@
 #define MAX_AV   200
 #define MAX_RES  200
 #define MAX_SES  100
+#define conf_path "src/config/admin.conf"
 
 #define COR_RESET  "\033[0m"
 #define COR_VERM   "\033[31m"
@@ -18,6 +19,11 @@
 #define COR_VERD   "\033[32m"
 #define COR_CIAN   "\033[36m"
 #define COR_BOLD   "\033[1m"
+
+typedef struct {
+    char user[8];
+    char password[8];
+} credencial;
 
 typedef struct {
     int  lin;
@@ -291,25 +297,76 @@ void atualizarSessao(const char *mat, const char *fim)
     fclose(f);
 }
 
-int loginAdmin() 
-{ 
-        char usr[20], sen[20];
-        cabec("LOGIN — ADMINISTRADOR");
-        printf(" Informe suas credenciais de acesso:\n\n");
-        printf(" Usuario : ");
-        scanf("%19s", usr);
-        printf(" Senha : ");
-        scanf("%19s", sen);
-              
-        if (strcmp(usr, "admin") == 0 && strcmp(sen, "1234") == 0) 
-        {
-            ok("Acesso liberado! Bem-vindo ao painel administrativo.");
-            pausar();
-            return 1;
-        }
-     erro("Usuario ou senha incorretos. Tente novamente."); 
-    pausar();
-    return 0; 
+
+int lerCredenciais(credencial *cred) {
+    // Monta o caminho baseado em onde o executável está rodando
+    // Ajuste esse caminho para o seu projeto
+    const char *caminho = "config/admin.conf";
+
+    printf(" [debug] Procurando arquivo em: %s\n", caminho);
+
+    FILE *f = fopen(caminho, "r");
+
+    if (f == NULL) {
+        printf(" Erro: '%s' nao encontrado.\n", caminho);
+        printf(" Dica: rode o programa da pasta raiz do projeto.\n");
+        return 0;  // retorna 0 = falhou
+    }
+
+    char linha[64];
+    while (fgets(linha, sizeof(linha), f)) {
+        if (linha[0] == '\n' || linha[0] == '#')
+            continue;
+        if (sscanf(linha, "usr=%19s", cred->user) == 1)
+            continue;
+        if (sscanf(linha, "sen=%19s", cred->password) == 1)
+            continue;
+    }
+
+    fclose(f);
+
+    // Verifica se realmente leu os dois campos
+    if (cred->user[0] == '\0' || cred->password[0] == '\0') {
+        printf(" Erro: arquivo .conf incompleto ou mal formatado.\n");
+        return 0;
+    }
+
+    return 1;  // sucesso
+}
+
+
+int loginAdmin() {
+    credencial cred;
+    memset(&cred, 0, sizeof(cred));
+
+    // ✅ SE FALHOU, PARA AQUI — não chega no strcmp
+    if (!lerCredenciais(&cred)) {
+        printf(" Encerrando login.\n");
+        return 0;
+    }
+
+    char usr[8], sen[8];
+    memset(usr, 0, 8);
+    memset(sen, 0, 8);
+
+    printf(" Usuario : ");
+    scanf("%19s", usr);
+
+    printf(" Senha   : ");
+    scanf("%19s", sen);
+
+    int resultado = (strcmp(usr, cred.user) == 0 &&
+                     strcmp(sen, cred.password) == 0);
+
+    memset(&cred, 0, sizeof(cred));  // apaga da RAM
+
+    if (!resultado) {
+        printf("\n Acesso negado!\n");
+        return 0;
+    }
+
+    printf("\n Bem-vindo, Administrador!\n");
+    return 1;
 }
 
 void cadOnibus(void)
