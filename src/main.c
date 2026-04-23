@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include "config.h"
 
 #define SEP      "===================================================="
 #define DIV      "----------------------------------------------------"
@@ -11,7 +12,10 @@
 #define MAX_AV   200
 #define MAX_RES  200
 #define MAX_SES  100
-#define conf_path "src/config/admin.conf"
+
+// Variáveis globais para caminhos de configuração (inicializadas em main)
+char g_admin_path[256] = {0};
+char g_operadores_path[256] = {0};
 
 #define COR_RESET  "\033[0m"
 #define COR_VERM   "\033[31m"
@@ -19,11 +23,6 @@
 #define COR_VERD   "\033[32m"
 #define COR_CIAN   "\033[36m"
 #define COR_BOLD   "\033[1m"
-
-typedef struct {
-    char user[8];
-    char password[8];
-} credencial;
 
 typedef struct {
     int  lin;
@@ -126,11 +125,12 @@ void dataHora(char *buf, int tam)
 
 void trim(char *s)
 {
-    if (!s || strlen(s) == 0) return;
+    if (!s) return;              // ← separado
+    if (strlen(s) == 0) return;  // ← separado
     int i = 0, f = (int)strlen(s) - 1;
     while (isspace((unsigned char)s[i])) i++;
     while (f > i && isspace((unsigned char)s[f])) f--;
-    if (i > f) { s[0] = '\0'; return; }   /* string era só espaços  */
+    if (i > f) { s[0] = '\0'; return; }
     memmove(s, s + i, f - i + 1);
     s[f - i + 1] = '\0';
 }
@@ -297,75 +297,56 @@ void atualizarSessao(const char *mat, const char *fim)
     fclose(f);
 }
 
+int loginAdmin(void)
+{
+    char usr[32], sen[32];
+    char fileUsr[32], fileSen[32];
+    char linha[200];
+    int  autenticado = 0;
 
-int lerCredenciais(credencial *cred) {
-    // Monta o caminho baseado em onde o executável está rodando
-    // Ajuste esse caminho para o seu projeto
-    const char *caminho = "config/admin.conf";
+    cabec("LOGIN — ADMINISTRADOR");
 
-    printf(" [debug] Procurando arquivo em: %s\n", caminho);
+    printf("  Usuario : ");
+    fgets(usr, sizeof(usr), stdin);   // FIX: trocado scanf por fgets
+    trim(usr);                        // FIX: remove \n e espaços
 
-    FILE *f = fopen(caminho, "r");
+    printf("  Senha   : ");
+    fgets(sen, sizeof(sen), stdin);   // FIX
+    trim(sen);                        // FIX
 
-    if (f == NULL) {
-        printf(" Erro: '%s' nao encontrado.\n", caminho);
-        printf(" Dica: rode o programa da pasta raiz do projeto.\n");
-        return 0;  // retorna 0 = falhou
+    FILE *f = fopen(g_admin_path, "r");  // FIX: usar caminho dinamicamente localizado
+    if (!f) {
+        erro("Arquivo de credenciais do administrador nao encontrado.");
+        fprintf(stderr, "  Tentou abrir: %s\n", g_admin_path);
+        perror("  Motivo");
+        pausar();
+        return 0;
     }
 
-    char linha[64];
     while (fgets(linha, sizeof(linha), f)) {
-        if (linha[0] == '\n' || linha[0] == '#')
-            continue;
-        if (sscanf(linha, "usr=%19s", cred->user) == 1)
-            continue;
-        if (sscanf(linha, "sen=%19s", cred->password) == 1)
-            continue;
-    }
+        trim(linha); // FIX: limpa linha
 
+        if (sscanf(linha, "%31[^:]:%31s", fileUsr, fileSen) != 2)
+            continue;
+
+        trim(fileUsr); // FIX
+        trim(fileSen); // FIX
+
+        if (strcmp(usr, fileUsr) == 0 && strcmp(sen, fileSen) == 0) { // FIX: comparação direta
+            autenticado = 1;
+            break;
+        }
+    }
     fclose(f);
 
-    // Verifica se realmente leu os dois campos
-    if (cred->user[0] == '\0' || cred->password[0] == '\0') {
-        printf(" Erro: arquivo .conf incompleto ou mal formatado.\n");
+    if (!autenticado) {
+        erro("Credenciais invalidas. Acesso negado.");
+        pausar();
         return 0;
     }
 
-    return 1;  // sucesso
-}
-
-
-int loginAdmin() {
-    credencial cred;
-    memset(&cred, 0, sizeof(cred));
-
-    // ✅ SE FALHOU, PARA AQUI — não chega no strcmp
-    if (!lerCredenciais(&cred)) {
-        printf(" Encerrando login.\n");
-        return 0;
-    }
-
-    char usr[8], sen[8];
-    memset(usr, 0, 8);
-    memset(sen, 0, 8);
-
-    printf(" Usuario : ");
-    scanf("%19s", usr);
-
-    printf(" Senha   : ");
-    scanf("%19s", sen);
-
-    int resultado = (strcmp(usr, cred.user) == 0 &&
-                     strcmp(sen, cred.password) == 0);
-
-    memset(&cred, 0, sizeof(cred));  // apaga da RAM
-
-    if (!resultado) {
-        printf("\n Acesso negado!\n");
-        return 0;
-    }
-
-    printf("\n Bem-vindo, Administrador!\n");
+    ok("Acesso liberado!");
+    pausar();
     return 1;
 }
 
@@ -764,27 +745,38 @@ int loginOperador(void)
     char usr[20], sen[20];
     char fileUsr[20], fileSen[20];
     char linha[200];
-    int  autenticado = 0;
+    int autenticado = 0;
 
-    FILE *f = fopen("credenciais_operadores.txt", "r");
+    cabec("LOGIN — OPERADOR DE CONTROLE");
+
+    printf("  Matricula : ");
+    fgets(usr, sizeof(usr), stdin);   // FIX
+    trim(usr);                        // FIX
+
+    printf("  Senha     : ");
+    fgets(sen, sizeof(sen), stdin);   // FIX
+    trim(sen);                        // FIX
+
+    FILE *f = fopen(g_operadores_path, "r");
     if (!f) {
         erro("Arquivo de credenciais de operadores nao encontrado.");
-        aviso("Crie o arquivo 'credenciais_operadores.txt' com o formato:");
-        printf("  usuario:senha\n");
+        fprintf(stderr, "  Tentou abrir: %s\n", g_operadores_path);
+        perror("  Motivo");
         pausar();
         return 0;
     }
 
-    cabec("LOGIN — OPERADOR DE CONTROLE");
-    printf("  Matricula : "); scanf("%14s", usr);
-    printf("  Senha     : "); scanf("%19s", sen);
-
     while (fgets(linha, sizeof(linha), f)) {
-        if (sscanf(linha, "%19[^:]:%19s", fileUsr, fileSen) != 2) continue;
+        trim(linha); // FIX
 
-        if (strcmp(usr, fileUsr) == 0) {
-            if (strcmp(sen, fileSen) == 0)
-                autenticado = 1;
+        if (sscanf(linha, "%19[^:]:%19s", fileUsr, fileSen) != 2)
+            continue;
+
+        trim(fileUsr); // FIX
+        trim(fileSen); // FIX
+
+        if (strcmp(usr, fileUsr) == 0 && strcmp(sen, fileSen) == 0) { // FIX
+            autenticado = 1;
             break;
         }
     }
@@ -792,9 +784,11 @@ int loginOperador(void)
 
     if (autenticado) {
         strncpy(op_logado.mat, usr, 14);
+        op_logado.mat[14] = '\0'; // FIX: garantir fim de string
+
         snprintf(op_logado.nom, sizeof(op_logado.nom), "Operador %s", usr);
+
         ok("Acesso liberado!");
-        printf("  Operador: %s\n", op_logado.nom);
         pausar();
         return 1;
     }
@@ -1081,6 +1075,23 @@ int main(void)
 {
     srand((unsigned int)time(NULL));   /* único ponto de semente — FIX #4 */
     setlocale(LC_ALL, "");
+    
+    // Inicializar caminhos de configuração
+    ConfigPaths cfg = {0};
+    if (!config_inicializar(&cfg)) {
+        fprintf(stderr, "\n" COR_VERM "[ERRO CRÍTICO]" COR_RESET);
+        fprintf(stderr, " Não foi possível localizar arquivos de configuração.\n");
+        fprintf(stderr, "Certifique-se que:\n");
+        fprintf(stderr, "  • Os arquivos existem em src/config/\n");
+        fprintf(stderr, "  • Você executou o programa a partir da raiz do projeto\n");
+        fprintf(stderr, "  • Ou defina CONFIG_PATH=/caminho/para/config\n\n");
+        return EXIT_FAILURE;
+    }
+    
+    // Copiar caminhos para variáveis globais
+    strncpy(g_admin_path, cfg.admin_path, sizeof(g_admin_path) - 1);
+    strncpy(g_operadores_path, cfg.operadores_path, sizeof(g_operadores_path) - 1);
+    
     int op;
 
     do {
@@ -1095,10 +1106,21 @@ int main(void)
         if (scanf("%d", &op) != 1) { while (getchar() != '\n'); op = -1; }
 
         switch (op) {
-            case 1:
-                if (loginAdmin())
-                    menuAdmin();
+           case 1:
+            {
+            int tent = 0;
+            while (getchar() != '\n'); // FIX: limpa buffer antes do login
+
+           while (tent < 3) {
+              if (loginAdmin()) { menuAdmin(); break; }
+           tent++;
+               break;
+            }
+                if (tent >= 3)
+                    erro("Numero maximo de tentativas atingido.");
                 break;
+
+            }
             case 2:
                 loginMotorista();
                 menuMotorista();
